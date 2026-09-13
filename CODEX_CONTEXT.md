@@ -2,6 +2,9 @@
 
 Post-v25.3 interface update: Cp hover labels have a transparent background and
 border, with text matching the curve color. Numerical calculations are unchanged.
+Plotly's transparent-color fallback required a Cp-scoped CSS override on the
+hover background path. Browser hover verification confirms fill/stroke are none
+and the text retains the curve color; all 26 regression tests pass.
 Local Git history now tracks this project, with v25.3 marking the validated
 baseline. See GIT_WORKFLOW.md for commands and the Windows ownership note.
 

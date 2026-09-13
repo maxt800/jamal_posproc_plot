@@ -42,4 +42,7 @@
 .dist-cp-panel {min-width:0;border:1px solid #dfe3e8;border-radius:10px;background:white;padding:8px;}
 .dist-cp-panel h4 {margin:8px 6px;font-family:var(--font-words);font-size:16px;}
 .dist-cp-panel .plot {width:100%;min-width:0;}
+/* Plotly replaces fully transparent hover backgrounds with its dark fallback.
+   Override only the Cp tooltip shape; retain the trace-colored text. */
+#distCpGrid .hoverlayer .hovertext > path {fill:none !important;stroke:none !important;}
 </style>
