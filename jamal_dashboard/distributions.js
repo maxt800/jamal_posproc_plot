@@ -125,6 +125,7 @@ function distributionLoadsText(series, mode) {
         groups.get(item.key).traces.push({x:le === 'raw' ? p.x : le === 'xmax' ? p.xc.map(v => 1-v) : p.xc,
           y:p.values, mode:'lines', name:safe(`${s.configuration} · ${s.polar.replace('POLAR-','P')} · α=${s.alpha}° β=${s.beta}°`),
           line:{color:style.color,dash:POLAR_DASHES[i % POLAR_DASHES.length]},
+          hoverlabel:{bgcolor:'rgba(0,0,0,0)',bordercolor:'rgba(0,0,0,0)',font:{color:style.color}},
           hovertemplate:`${name}<br>${safe(item.label)}<br>Y=${p.y.toFixed(3)} m · 2Y/BREF=${eta}<br>${le === 'raw' ? 'X' : 'x/c'}: %{x:.4f}<br>Cp: %{y:.5f}<extra></extra>`});
       });
     });

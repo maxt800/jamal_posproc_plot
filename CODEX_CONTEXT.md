@@ -1,5 +1,10 @@
 # Current update: v25.3 (2026-09-13)
 
+Post-v25.3 interface update: Cp hover labels have a transparent background and
+border, with text matching the curve color. Numerical calculations are unchanged.
+Local Git history now tracks this project, with v25.3 marking the validated
+baseline. See GIT_WORKFLOW.md for commands and the Windows ownership note.
+
 User correction supersedes earlier component-normalization descriptions: all plot
 coordinates use infout BREF, including VTAIL. Physical tail projected span stays
 5 m; BREF stays 10 m. Cp labels follow the selected 2Y/BREF, Y/BREF or Y [m]

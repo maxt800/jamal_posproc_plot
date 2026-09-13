@@ -1,5 +1,9 @@
 # JAMAL Aerodynamic Results Dashboard v25.3
 
+Cp hover labels use transparent backgrounds and curve-colored text to keep small
+station plots readable. Local Git workflow instructions are in ../GIT_WORKFLOW.md;
+the v25.3 tag preserves the version before this hover styling change.
+
 ## New in v25.3
 
 All span coordinates use infout BREF, including VTAIL. The span-coordinate selector
