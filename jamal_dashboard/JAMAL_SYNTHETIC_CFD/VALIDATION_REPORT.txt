@@ -1,0 +1,7 @@
+Synthetic JAMAL fixture validation
+Date: 2026-09-13
+
+PASS: 1654 checks; 2 POLARs, 10 states, 18 geometry curves, 90 Cp curves, 10 force tables, 2 drag-rise sweeps.
+
+Standard-library validation of raw fixture files and expected numeric values.
+Actual v25 dashboard execution was not performed: dashboard source unavailable.

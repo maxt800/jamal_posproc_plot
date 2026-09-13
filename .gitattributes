@@ -1,0 +1,8 @@
+* text=auto
+*.py text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.cmd text eol=crlf
+# Preserve checksum-verified fixture bytes on every platform.
+jamal_dashboard/JAMAL_SYNTHETIC_CFD/** -text

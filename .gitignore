@@ -1,0 +1,16 @@
+# Generated reports, caches and release bundles
+**/DASHBOARD/
+**/.jamal_cache/
+__pycache__/
+*.py[cod]
+*.zip
+
+# Local environments and editor/OS files
+.venv/
+venv/
+.env
+.env.*
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

@@ -1,0 +1,45 @@
+<section class="dashboard-section" id="section-distributions" aria-label="Distributions">
+  <div class="card">
+    <h2>Spanwise loads and chordwise Cp</h2>
+    <p class="small">Synthetic fixture verified · Production validation pending. Forces are N/m; cl uses qdin and local chord. Spanwise lift currently requires beta = 0.</p>
+    <div class="toolbar-row">
+      <label for="distConfig">Configuration</label><select id="distConfig"></select>
+      <label for="distPolar">POLAR</label><select id="distPolar"></select>
+      <label for="distComponent">Component</label><select id="distComponent"></select>
+      <label for="distState">State</label><select id="distState"></select>
+      <button id="distAdd">Add overlay</button><button id="distClear">Clear overlays</button>
+    </div>
+    <p id="distOverlays" class="small"></p>
+    <div class="toolbar-row">
+      <label for="distCoordinate">Span coordinate</label>
+      <select id="distCoordinate"><option value="eta">2Y/BREF</option><option value="yb">Y/BREF</option><option value="y">Y [m]</option></select>
+      <label for="distLeadingEdge">Cp leading edge</label>
+      <select id="distLeadingEdge"><option value="xmin">Xmin (synthetic fixture convention)</option><option value="xmax">Xmax (reversed X direction)</option><option value="raw">Unverified: show dimensional X</option></select>
+    </div>
+    <p class="small">Confirm the leading-edge direction for your geometry. Changing this control only changes Cp normalization; surface point order is preserved. All components use infout BREF for span normalization. Cp station labels follow the selected span coordinate.</p>
+    <p id="distStatus" role="status" aria-live="polite"></p>
+    <p id="distReference" class="small"></p>
+  </div>
+  <div class="card"><button id="distExport">Save spanwise loads (.txt)</button><span id="distExportStatus" role="status" aria-live="polite"></span><p class="small">Exports cl and cl.c at every station of the displayed states and overlays, including chord, BREF, alpha and beta.</p></div>
+  <div class="card"><h3>Spanwise cl</h3><div id="distSpanPlot" class="plot"></div></div>
+  <div class="card"><h3>Spanwise cl.c</h3><div id="distSpanChordPlot" class="plot"></div></div>
+  <div class="card">
+    <h3>Chordwise pressure</h3>
+    <div class="toolbar-row">
+      <button id="distAll">Select all stations</button><button id="distNone">Clear stations</button>
+      <label for="distNth">Every nth station</label><input id="distNth" type="number" min="1" value="2" style="width:65px">
+      <button id="distEvery">Apply</button>
+      <label><input id="distSingle" type="checkbox"> Single-station mode</label>
+    </div>
+    <div id="distStations" style="display:flex;flex-wrap:wrap;gap:12px;margin:12px 0"></div>
+    <p class="small">Each panel shows one station. Selected states and configurations overlay within that panel. Components are kept in separate panels; Cp axes share the same scale for comparison.</p>
+    <div id="distCpGrid" class="dist-cp-grid"></div>
+  </div>
+  <div class="card"><details><summary>Distribution integrity and source files</summary><pre id="distIntegrity" style="white-space:pre-wrap;max-height:320px;overflow:auto"></pre></details></div>
+</section>
+<style>
+.dist-cp-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:16px;align-items:start;}
+.dist-cp-panel {min-width:0;border:1px solid #dfe3e8;border-radius:10px;background:white;padding:8px;}
+.dist-cp-panel h4 {margin:8px 6px;font-family:var(--font-words);font-size:16px;}
+.dist-cp-panel .plot {width:100%;min-width:0;}
+</style>

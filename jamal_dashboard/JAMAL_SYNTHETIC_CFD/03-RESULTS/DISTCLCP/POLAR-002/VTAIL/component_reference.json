@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "span_reference_m": 5.0,
+  "synthetic": true,
+  "geometry": "paired V-tail",
+  "cant_degrees": 45,
+  "station_coordinate": "projected Y [m]; centerline 0",
+  "panel_center_z": "abs(Y)*tan(45 degrees)",
+  "curve_ordinate": "local section-normal coordinate [m]",
+  "force_density": "body forces per projected Y metre [N/m]",
+  "notes": "Demonstration component only; not included in the existing whole-aircraft ADF coefficients."
+}
