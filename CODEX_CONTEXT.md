@@ -1,5 +1,12 @@
 # Current update: v25.3 (2026-09-13)
 
+2026-09-14: Cp station panels now include section geometry below the pressure
+curves. Both use the selected chord coordinate; geometry has an independent y/c
+axis with equal x/y scaling. Raw mode uses metres. Section-file ordinate values
+are divided by chord without recentering, rotating or changing their sign.
+Geometry is carried from section_state1 in source order; cached raw inputs remain
+reusable. Legend toggles apply to each Cp curve and its matching section outline.
+
 Post-v25.3 interface update: Cp hover labels have a transparent background and
 border, with text matching the curve color. Numerical calculations are unchanged.
 Cp hover content is limited to x/c and Cp (X [m] and Cp in dimensional-X mode).

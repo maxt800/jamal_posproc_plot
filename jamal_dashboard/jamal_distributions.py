@@ -107,7 +107,7 @@ def read_distributions(configurations, summaries, parse_infout, cache_dir, force
     def issue(cfg, polar, component, state, message):
         result['issues'].append({'severity': 'WARNING', 'configuration': cfg['label'],
                                  'polar': polar, 'check': 'Distributions',
-                                 'details': f'{component} · state {state}: {message}'})
+                                 'details': f'{component} Â· state {state}: {message}'})
 
     for cfg in configurations:
         for number in cfg['polars']:
@@ -120,8 +120,9 @@ def read_distributions(configurations, summaries, parse_infout, cache_dir, force
             components = sorted((p for p in root.iterdir() if p.is_dir() and not p.is_symlink()), key=lambda p: p.name)
             for component in components:
                 if progress:
-                    progress(f"{cfg['label']} · {polar} · {component.name}")
+                    progress(f"{cfg['label']} Â· {polar} Â· {component.name}")
                 geometry, forces, cps = [], {}, {}
+                outlines = {}
                 span_reference = meta.get('bref')
                 reference_source = 'infout BREF'
                 reference_path = component / 'component_reference.json'
@@ -158,6 +159,7 @@ def read_distributions(configurations, summaries, parse_infout, cache_dir, force
                             if chord <= 0:
                                 raise ValueError('non-positive chord')
                             geometry.append({'y': y, 'xmin': min(xs), 'xmax': max(xs), 'chord': chord})
+                            outlines[y] = rows
                         elif kind == 'cp':
                             cps.setdefault(state, []).append((finite_number(station_match.group(3)), rows))
                         else:
@@ -235,7 +237,9 @@ def read_distributions(configurations, summaries, parse_infout, cache_dir, force
                         # Keep raw X as well as candidate x/c. The UI exposes the LE convention.
                         cp_used.add(g['y'])
                         series['cp'].append({**g, 'x': [p[0] for p in points], 'values': [p[1] for p in points],
-                                             'xc': [(p[0]-g['xmin'])/g['chord'] for p in points]})
+                                             'xc': [(p[0]-g['xmin'])/g['chord'] for p in points],
+                                             'airfoil': {'x': [r[0] for r in outlines[g['y']]],
+                                                         'ordinate': [r[1] for r in outlines[g['y']]]}})
                     series['cp'].sort(key=lambda r: r['y'])
                     for g in geometry:
                         if g['y'] not in cp_used:

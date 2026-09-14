@@ -1,5 +1,12 @@
 # JAMAL Aerodynamic Results Dashboard v25.3
 
+Each Cp station panel includes its section outline underneath, using a shared
+x/c axis and an independent y/c axis with equal geometric scaling. The ordinate
+comes directly from the section file divided by local chord (no sign change,
+rotation or recentering). Xmin/Xmax selection applies to both Cp and geometry;
+dimensional-X mode uses metres. Matching colors, dashes and legend toggles link
+the pressure curve and outline. Section geometry comes from section_state1.
+
 Cp hover labels use transparent backgrounds and curve-colored text to keep small
 station plots readable. Local Git workflow instructions are in ../GIT_WORKFLOW.md;
 the v25.3 tag preserves the version before this hover styling change.

@@ -120,12 +120,22 @@ function distributionLoadsText(series, mode) {
         hovertemplate:`${name}<br>Span: %{x:.4f}<br>cl.c: %{y:.5f} m<extra></extra>`});
       s.cp.filter(p => selectedStations.has(station(s,p).key)).forEach(p => {
         const item = station(s,p);
-        if(!groups.has(item.key)) groups.set(item.key,{...item,traces:[]});
+        if(!groups.has(item.key)) groups.set(item.key,{...item,traces:[],airfoils:[]});
         groups.get(item.key).traces.push({x:le === 'raw' ? p.x : le === 'xmax' ? p.xc.map(v => 1-v) : p.xc,
           y:p.values, mode:'lines', name:safe(`${s.configuration} · ${s.polar.replace('POLAR-','P')} · α=${s.alpha}° β=${s.beta}°`),
           line:{color:style.color,dash:POLAR_DASHES[i % POLAR_DASHES.length]},
           hoverlabel:{bgcolor:'rgba(0,0,0,0)',bordercolor:'rgba(0,0,0,0)',font:{color:style.color}},
           hovertemplate:`${le === 'raw' ? 'X [m]' : 'x/c'}: %{x:.4f}<br>Cp: %{y:.5f}<extra></extra>`});
+        if(p.airfoil) {
+          const group=groups.get(item.key), cpTrace=group.traces[group.traces.length-1];
+          group.airfoils.push({x:p.airfoil.x.map(x=>le==='raw'?x:le==='xmax'?(p.xmax-x)/p.chord:(x-p.xmin)/p.chord),
+            y:p.airfoil.ordinate.map(y=>le==='raw'?y:y/p.chord), yaxis:'y2',
+            mode:'lines',name:cpTrace.name,line:{...cpTrace.line},showlegend:false,
+            legendgroup:cpTrace.name,hoverlabel:cpTrace.hoverlabel,
+            hovertemplate:`${le==='raw'?'X [m]':'x/c'}: %{x:.4f}<br>${le==='raw'?'y [m]':'y/c'}: %{y:.5f}<extra></extra>`});
+          cpTrace.legendgroup=cpTrace.name;
+        }
+
       });
     });
     const layout = (id,title,count) => {
@@ -160,9 +170,11 @@ function distributionLoadsText(series, mode) {
       byId('distCpGrid').append(panel.card);
       const bottom=85+g.traces.length*22, height=300+bottom;
       panel.plot.style.height=`${height}px`;
-      Plotly.react(panel.plot,g.traces,mixedTypographyLayout({height,margin:{l:45,r:12,t:15,b:bottom},
-        xaxis:{title:le==='raw'?'X [m]':'x/c',range:le==='raw'?undefined:[0,1]},
-        yaxis:{title:'Cp',range:cpRange,autorange:false},
+      Plotly.react(panel.plot,[...g.traces,...g.airfoils],mixedTypographyLayout({height,margin:{l:45,r:12,t:15,b:bottom},
+        xaxis:{title:le==='raw'?'X [m]':'x/c',range:le==='raw'?undefined:[0,1],anchor:g.airfoils.length?'y2':'y'},
+        yaxis:{title:'Cp',range:cpRange,autorange:false,domain:g.airfoils.length?[.32,1]:[0,1]},
+        yaxis2:{title:le==='raw'?'y [m]':'y/c',domain:[0,.23],anchor:'x',
+          scaleanchor:'x',scaleratio:1,constrain:'range',autorange:true,nticks:3,zeroline:false},
         showlegend:true,legend:{orientation:'h',y:-.28,yanchor:'top',font:{size:10}},
         uirevision:JSON.stringify([le,g.key,cpRange])}),{responsive:true,displaylogo:false});
     });

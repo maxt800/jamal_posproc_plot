@@ -71,6 +71,22 @@ class VtailTests(unittest.TestCase):
         self.assertTrue(any('invalid component span reference' in i['details'] for i in data['issues']))
         self.assertTrue(all(s['span_reference'] is None for s in data['series'] if s['polar']=='POLAR-001' and s['component']=='VTAIL'))
 
+    def test_airfoil_coordinates_preserve_section_order_and_cached_values(self):
+        data = self.load()
+        for series in data['series']:
+            for cp in series['cp']:
+                path = (self.base / '03-RESULTS/DISTCLCP' / series['polar'] /
+                        series['component'] / f"section_state1_station{cp['y']:.3f}")
+                points = dist.parse_curve(path)
+                self.assertEqual(cp['airfoil']['x'], [p[0] for p in points])
+                self.assertEqual(cp['airfoil']['ordinate'], [p[1] for p in points])
+                normalized = [(x-cp['xmin'])/cp['chord'] for x in cp['airfoil']['x']]
+                self.assertAlmostEqual(min(normalized), 0)
+                self.assertAlmostEqual(max(normalized), 1)
+        cached = self.load()
+        self.assertEqual(cached['counts'], {'parsed': 0, 'cached': 236})
+        self.assertEqual(cached['series'], data['series'])
+
     def test_original_and_additional_fixture_checksums(self):
         for manifest in ('SHA256SUMS.txt','VTAIL_SHA256SUMS.txt'):
             for line in (self.base/manifest).read_text().splitlines():
