@@ -168,15 +168,31 @@ function distributionLoadsText(series, mode) {
       }
       panel.heading.textContent=g.label;
       byId('distCpGrid').append(panel.card);
-      const bottom=85+g.traces.length*22, height=300+bottom;
+    });
+    // Finalize every grid cell before Plotly measures any panel. Otherwise the
+    // first airfoil's equal-scale constraint uses a temporary full-grid width.
+    ordered.forEach(g=>{
+      const panel=panels.get(g.key);
+      const width=panel.plot.clientWidth, bottom=85+g.traces.length*22;
+      let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+      g.airfoils.forEach(t=>{
+        t.x.forEach(v=>{minX=Math.min(minX,v);maxX=Math.max(maxX,v);});
+        t.y.forEach(v=>{minY=Math.min(minY,v);maxY=Math.max(maxY,v);});
+      });
+      // Give wide panels enough height for the airfoil at true proportions so
+      // its aspect constraint never needs to expand the shared chord range.
+      const chordRange=le==='raw'?maxX-minX:1;
+      const foilHeight=g.airfoils.length?Math.max(66,Math.ceil((width-57)*(maxY-minY)/chordRange*1.25)):0;
+      const plotHeight=g.airfoils.length?194+25+foilHeight:285;
+      const height=plotHeight+15+bottom;
       panel.plot.style.height=`${height}px`;
-      Plotly.react(panel.plot,[...g.traces,...g.airfoils],mixedTypographyLayout({height,margin:{l:45,r:12,t:15,b:bottom},
-        xaxis:{title:le==='raw'?'X [m]':'x/c',range:le==='raw'?undefined:[0,1],anchor:g.airfoils.length?'y2':'y'},
-        yaxis:{title:'Cp',range:cpRange,autorange:false,domain:g.airfoils.length?[.32,1]:[0,1]},
-        yaxis2:{title:le==='raw'?'y [m]':'y/c',domain:[0,.23],anchor:'x',
+      Plotly.react(panel.plot,[...g.traces,...g.airfoils],mixedTypographyLayout({width,height,margin:{l:45,r:12,t:15,b:bottom},
+        xaxis:{title:le==='raw'?'X [m]':'x/c',range:le==='raw'?undefined:[0,1],autorange:le==='raw',anchor:g.airfoils.length?'y2':'y'},
+        yaxis:{title:'Cp',range:cpRange,autorange:false,domain:g.airfoils.length?[(foilHeight+25)/plotHeight,1]:[0,1]},
+        yaxis2:{title:le==='raw'?'y [m]':'y/c',domain:[0,g.airfoils.length?foilHeight/plotHeight:.23],anchor:'x',
           scaleanchor:'x',scaleratio:1,constrain:'range',autorange:true,nticks:3,zeroline:false},
         showlegend:true,legend:{orientation:'h',y:-.28,yanchor:'top',font:{size:10}},
-        uirevision:JSON.stringify([le,g.key,cpRange])}),{responsive:true,displaylogo:false});
+        uirevision:JSON.stringify([le,g.key,cpRange,panel.plot.clientWidth])}),{responsive:true,displaylogo:false});
     });
     byId('distOverlays').textContent = overlays.size ? `Pinned overlays: ${data.filter(s => overlays.has(key(s))).map(text).join(' | ')}` : 'Current state shown. Add overlay to retain it while selecting another state or configuration.';
     byId('distStatus').textContent = !data.length ? 'No distribution data found for the selected POLARs. Expected: 03-RESULTS/DISTCLCP/POLAR-XXX/<component>.' :
@@ -202,6 +218,15 @@ function distributionLoadsText(series, mode) {
       }
     } catch (_) {}
     ready = true; updateStations();
+    let gridWidth = byId('distCpGrid').clientWidth, resizeFrame;
+    const gridObserver = new ResizeObserver(entries => {
+      const width = entries[0].contentRect.width;
+      if (width <= 0 || Math.abs(width-gridWidth) < 1) return;
+      gridWidth = width;
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(draw);
+    });
+    gridObserver.observe(byId('distCpGrid'));
     byId('distIntegrity').textContent = [
       ...(distributionData.issues||[]).map(i => `${i.configuration} · ${i.polar} · ${i.details}`),
       '\nSources (size and modification timestamp retained in dashboard.json):',

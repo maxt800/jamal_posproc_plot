@@ -1,5 +1,11 @@
 # Current update: v25.3 (2026-09-13)
 
+2026-09-15: Cp rendering first attaches every grid panel, then measures and draws
+them. This prevents early stations (especially -100%) from using a temporary
+full-grid width and expanding their chord axis. Airfoil height adapts to panel
+width to preserve equal geometric scaling without wasting horizontal space.
+Grid width changes trigger a deferred redraw; normalized chord axes reset to 0..1.
+
 2026-09-14: Cp station panels now include section geometry below the pressure
 curves. Both use the selected chord coordinate; geometry has an independent y/c
 axis with equal x/y scaling. Raw mode uses metres. Section-file ordinate values
