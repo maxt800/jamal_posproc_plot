@@ -187,25 +187,61 @@ assert.deepEqual(cl.xs,[0,2]); assert.deepEqual(cl.ys,[-.25,.5]);
         js += html[html.index('function coefficientPlotSpecs('):html.index('function drawStandardAeroPlots(')]
         js += r'''
 for(const axis of ['B','S','W']) {
-  for(const abscissa of ['ALPHA','CL']) {
+  for(const abscissa of ['ALPHA','BETA','CL','CY']) {
     const specs=coefficientPlotSpecs(axis,abscissa);
-    assert.equal(specs.length,abscissa==='ALPHA'?7:6);
-    assert.equal(specs.some(s=>s.base==='CL'),abscissa==='ALPHA');
-    specs.forEach(s=>assert.equal(s.xKey,abscissa==='ALPHA'?'ALPHA':'CL'+axis));
+    assert.equal(specs.length,['ALPHA','BETA'].includes(abscissa)?7:6);
+    assert.equal(specs.some(s=>s.base==='CL'),abscissa!=='CL');
+    assert.equal(specs.some(s=>s.base==='CY'),abscissa!=='CY');
+    specs.forEach(s=>assert.equal(s.xKey,['ALPHA','BETA'].includes(abscissa)?abscissa:abscissa+axis));
     assert.equal(specs.find(s=>s.base==='CM').yKey,'CM'+axis+'25');
     assert.equal(specs.find(s=>s.base==='CR').yKey,'CR'+axis+'25');
     assert.equal(specs.find(s=>s.base==='CN').yKey,'CN'+axis+'25');
-    const rows=[{ALPHA:2,['CL'+axis]:.6,['CD'+axis]:.03},
-                {ALPHA:0,['CL'+axis]:.2,['CD'+axis]:0},
-                {ALPHA:1,['CL'+axis]:.4,['CD'+axis]:null}];
+    const rows=[{ALPHA:2,BETA:2,['CY'+axis]:.6,['CL'+axis]:.6,['CD'+axis]:.03},
+                {ALPHA:0,BETA:0,['CY'+axis]:.2,['CL'+axis]:.2,['CD'+axis]:0},
+                {ALPHA:1,BETA:1,['CY'+axis]:.4,['CL'+axis]:.4,['CD'+axis]:null}];
     const pts=coefficientPlotPoints(rows,specs.find(s=>s.base==='LD'));
     assert.deepEqual(pts.map(p=>p.y),[null,null,20]);
-    assert.deepEqual(pts.map(p=>p.x),abscissa==='ALPHA'?[0,1,2]:[.2,.4,.6]);
+    assert.deepEqual(pts.map(p=>p.x),['ALPHA','BETA'].includes(abscissa)?[0,1,2]:[.2,.4,.6]);
     assert.equal(pts[2].row,rows[0]);
   }
 }
 '''
         path = self.base / 'coefficient_grid_checks.js'
+        path.write_text(js, encoding='utf-8')
+        result = subprocess.run([shutil.which('node'), str(path)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_selected_delta_and_drag_rise_axes(self):
+        html = self.html()
+        js = "const assert=require('node:assert/strict');\n"
+        for start, end in [('coefficientKey', 'coefficientDisplayName'),
+                           ('interpolationPoints', 'setComparisonMetric'),
+                           ('selectedComparisonSeries', 'comparisonSeries'),
+                           ('dragRiseValues', 'drawCoeffPlot')]:
+            js += html[html.index('function '+start+'('):html.index('function '+end+'(')]
+        js += r'''
+for(const axis of ['B','S','W']) {
+  for(const coordinate of ['ALPHA','BETA','CL','CY']) {
+    const key=['CL','CY'].includes(coordinate)?coordinate+axis:coordinate;
+    const ref={rows:[{[key]:0,['CM'+axis+'25']:1},{[key]:1,['CM'+axis+'25']:2},{[key]:3,['CM'+axis+'25']:4}]};
+    const cmp={rows:[{[key]:0,['CM'+axis+'25']:3},{[key]:2,['CM'+axis+'25']:5}]};
+    const result=selectedComparisonSeries(ref,cmp,'CM',{},axis,coordinate);
+    assert.deepEqual(result.xs,[0,1]); // no extrapolation to 3
+    assert.deepEqual(result.ys,[2,2]);
+    assert.equal(result.yLabel,'ΔCM'+axis);
+  }
+  const key='CD'+axis;
+  const values=dragRiseValues([{[key]:.02},{[key]:.04},{[key]:null}],axis);
+  assert.deepEqual(values,[0,.02,null]);
+  assert.deepEqual(dragRiseValues([{[key]:null},{[key]:.04}],axis),[null,null]);
+}
+const ref={rows:[{BETA:0,CYW:1},{BETA:0,CYW:3},{BETA:null,CYW:999}]};
+const cmp={rows:[{BETA:0,CYW:5},{BETA:0,CYW:7}]};
+assert.deepEqual(selectedComparisonSeries(ref,cmp,'CY',{},'W','BETA').ys,[4]);
+const sm={'A|P':[{CYB:.1,STATIC_MARGIN_PERCENT:10}], 'B|P':[{CYB:.1,STATIC_MARGIN_PERCENT:12}]};
+assert.deepEqual(selectedComparisonSeries({case_label:'A',polar:'P'},{case_label:'B',polar:'P'},'SM',sm,'B','CY').ys,[2]);
+'''
+        path = self.base / 'axis_delta_drag_checks.js'
         path.write_text(js, encoding='utf-8')
         result = subprocess.run([shutil.which('node'), str(path)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)

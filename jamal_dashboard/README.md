@@ -1,10 +1,15 @@
-# JAMAL Aerodynamic Results Dashboard v25.3
+# JAMAL Aerodynamic Results Dashboard v25.4
 
-Coefficients now shows CL, CD, CY, CM, CR, CN and L/D in a two-column grid.
-Choose Body, Stability or Wind axes, then ALPHA or selected-axis CL as the
-horizontal coordinate. CL versus itself is omitted. The moment reference
+Coefficients shows three force plots in a row, then three moment plots below,
+followed by L/D. Choose Body, Stability or Wind axes, then ALPHA, BETA,
+selected-axis CL or CY as the horizontal coordinate. Self-plots are omitted.
+Headings show Reynolds and Mach, plus Xref for moments. The moment reference
 applies to all moment plots, and L/D uses CL/CD from the chosen axes.
-The chosen horizontal coordinate is retained in saved views and presets.
+Delta also provides independent axis and coordinate selectors. Drag rise supports
+all three axes using their source drag columns and a lowest-Mach baseline;
+file groups retain their original CLS targets. Missing axis data is reported.
+These controls are retained in saved views and presets. Numeric ticks and values
+use an aligned monospace font; word headings retain their existing typography.
 Spanwise cl/cl.c, static margin, drag rise and convergence also use two columns,
 stacking on screens below 760 px. The Cp station layout is unchanged.
 

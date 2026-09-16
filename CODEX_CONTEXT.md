@@ -1,4 +1,17 @@
-# Current update: v25.3 (2026-09-13)
+# Current update: v25.4 (2026-09-16)
+
+Coefficients now supports ALPHA, BETA, selected-axis CL and CY. Three force
+panels form the first row and three moment panels the second; self-plots are
+omitted. Card headings show Reynolds and Mach ranges, plus Xref for moments.
+Numeric ticks and values use Consolas while word headings retain their font.
+Delta has independent axis and abscissa selectors with interpolation restricted
+to overlapping data. Drag rise uses actual CDB/CDS/CDW columns and subtracts
+the selected-axis drag at the lowest Mach; groups retain original CLS targets.
+Missing axis data is reported rather than substituted. New controls persist in
+presets and last view. Both loaders retain the extra drag columns; version bump
+invalidates old caches. All 29 tests pass, including protected scientific source
+checks. Browser checks verify row layout, coordinates, delta/drag axes and saved
+settings. Cp implementation and fixtures are unchanged.
 
 2026-09-16: Two-column responsive layouts now cover spanwise cl/cl.c, coefficients,
 static margin, drag rise and convergence (including selected-case histories).

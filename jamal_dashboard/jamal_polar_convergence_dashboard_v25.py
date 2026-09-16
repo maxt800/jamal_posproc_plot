@@ -121,7 +121,7 @@ FLUENT_LOG_NAMES = [
 ]
 
 # Module versions shown in the dashboard and JSON output.
-SCRIPT_VERSION = "v25.3"
+SCRIPT_VERSION = "v25.4"
 MODULE_VERSIONS = {
     "infout parser": "1.3",
     "Distributions": jamal_distributions.VERSION,
@@ -547,7 +547,7 @@ def load_drag_rise_data(cases: Sequence[CaseConfig]) -> Dict:
             try:
                 cls_label, cls_value = parse_drag_rise_cls_from_filename(path)
                 df = read_drag_rise_file(path)
-                cols = [c for c in ["POLAR", "MACH", "REYNOLDS", "ALPHA", "BETA", "CDS", "CLS", "DELTA_CDS"] if c in df.columns]
+                cols = [c for c in ["POLAR", "MACH", "REYNOLDS", "ALPHA", "BETA", "CDB", "CDW", "CDS", "CLS", "DELTA_CDS"] if c in df.columns]
                 curves.append({
                     "case_label": case.label,
                     "drag_rise_dir": str(case.drag_rise_dir),
@@ -1441,9 +1441,9 @@ def make_html(summaries, conv_rows, history, adf_data, drag_rise_data, provenanc
 
 :root {{
   --font-words: ui-serif, Georgia, Cambria, "Times New Roman", serif;
-  --font-numbers: Arial, Helvetica, sans-serif;
+  --font-numbers: "Consolas", "Liberation Mono", monospace;
 }}
-body {{ font-family: var(--font-numbers); margin: 24px; background: #f6f7f9; color: #222; }}
+body {{ font-family: Arial, Helvetica, sans-serif; margin: 24px; background: #f6f7f9; color: #222; }}
 h1, h2, h3 {{ margin-bottom: 8px; font-family: var(--font-words); font-weight: 600; letter-spacing: -0.015em; }}
 .dashboard-hero {{ margin: 2px 0 18px; padding: 4px 2px 6px; }}
 .dashboard-brand {{ font-family: var(--font-words); font-size: 15px; font-weight: 600; color: #46515f; letter-spacing: 0.015em; }}
@@ -1474,6 +1474,13 @@ label {{ font-family: var(--font-words); }}
 .analysis-plot-grid {{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;}}
 .analysis-plot-grid > * {{min-width:0;}}
 .analysis-plot-grid .plot {{width:100%;min-width:0;}}
+#coefficientPlots {{display:block;}}
+.coefficient-row {{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}}
+.coefficient-row > * {{min-width:0;}}
+.coefficient-row h2 {{font-size:17px;}}
+.numeric-value {{font-family:var(--font-numbers);font-variant-numeric:tabular-nums lining-nums;}}
+.plot .xtick text,.plot .ytick text,.plot .y2tick text,input,td {{font-variant-numeric:tabular-nums lining-nums;}}
+@media(max-width:760px) {{.coefficient-row {{grid-template-columns:minmax(0,1fr);}}}}
 @media(max-width:760px) {{.analysis-plot-grid {{grid-template-columns:minmax(0,1fr);}}}}
 .small {{ color: #666; font-size: 12px; }}
 .badge {{ display:inline-block; padding: 6px 9px; margin: 3px; border-radius: 7px; color: white; font-size: 12px; }}
@@ -1688,7 +1695,7 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
     </select>
     <label for="coefficientAbscissa">Plot against:</label>
     <select id="coefficientAbscissa" onchange="drawAdfCoeffPlot();saveLastState();">
-      <option value="ALPHA">ALPHA</option><option value="CL">CL</option>
+      <option value="ALPHA">ALPHA</option><option value="BETA">BETA</option><option value="CL">CL</option><option value="CY">CY</option>
     </select>
     <select id="stabilityCoeffSelect" hidden aria-hidden="true">
       <option value="CD">CD</option>
@@ -1699,16 +1706,20 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
       <option value="CN">CN</option>
     </select>
   </div>
-  <p class="small">Choose Body, Stability, or Wind axes and plot against ALPHA or the selected-axis CL. Each coefficient has its own plot; CL versus itself is omitted. L/D uses CL/CD in the chosen axes. Moment plots use the selected reference point.</p>
+  <p class="small">Choose axes and ALPHA, BETA, CL or CY. Coefficients plotted against themselves are omitted. L/D uses CL/CD in the chosen axes. Moment plots use the selected reference point.</p>
 </div>
 <div id="coefficientPlots" class="analysis-plot-grid">
+<div class="coefficient-row">
 <div class="card" id="coefficientCLCard"><h2 id="coefficientCLHeading">CL</h2><div id="adfCoeffPlot" class="plot"></div></div>
 <div class="card"><h2 id="coefficientCDHeading">CD</h2><div id="coefficientCDPlot" class="plot"></div></div>
-<div class="card"><h2 id="coefficientCYHeading">CY</h2><div id="coefficientCYPlot" class="plot"></div></div>
+<div class="card" id="coefficientCYCard"><h2 id="coefficientCYHeading">CY</h2><div id="coefficientCYPlot" class="plot"></div></div>
+</div><div class="coefficient-row">
 <div class="card"><h2 id="coefficientCMHeading">CM</h2><div id="coefficientCMPlot" class="plot"></div></div>
 <div class="card"><h2 id="coefficientCRHeading">CR</h2><div id="coefficientCRPlot" class="plot"></div></div>
 <div class="card"><h2 id="coefficientCNHeading">CN</h2><div id="coefficientCNPlot" class="plot"></div></div>
+</div><div class="coefficient-row">
 <div class="card"><h2 id="ldHeading">L/D</h2><div id="ldPlot" class="plot"></div></div>
+</div>
 </div>
 </section>
 
@@ -1727,11 +1738,18 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
 <section id="section-comparison" class="dashboard-section">
 <div class="card">
   <h2>Delta comparisons</h2>
-  <p class="small">Add multiple Reference/Comparison pairs to overlay several differences. Difference is Comparison − Reference. ΔCL is evaluated versus ALPHA. ΔCD, ΔCM, ΔL/D, and ΔStatic Margin are evaluated versus the reference curve CLS; every comparison curve is linearly interpolated onto its own reference curve grid.</p>
+  <p class="small">Difference is Comparison − Reference, interpolated onto the reference curve's selected coordinate without extrapolation. Repeated coordinates are averaged. Static margin retains its stability-axis definition; its horizontal coordinate follows your selection.</p>
+  <div class="controls">
+    <label for="deltaAxis">Axis system:</label><select id="deltaAxis" onchange="drawComparisonPlot();saveLastState();"><option value="W">Wind</option><option value="S" selected>Stability</option><option value="B">Body</option></select>
+    <label for="deltaAbscissa">Plot against:</label><select id="deltaAbscissa" onchange="drawComparisonPlot();saveLastState();"><option>ALPHA</option><option>BETA</option><option>CL</option><option>CY</option></select>
+  </div>
   <div class="controls comparison-buttons" id="comparisonMetricButtons">
     <button class="active" onclick="setComparisonMetric('CL', this)">ΔCL</button>
     <button onclick="setComparisonMetric('CD', this)">ΔCD</button>
+    <button onclick="setComparisonMetric('CY', this)">ΔCY</button>
     <button onclick="setComparisonMetric('CM', this)">ΔCM</button>
+    <button onclick="setComparisonMetric('CR', this)">ΔCR</button>
+    <button onclick="setComparisonMetric('CN', this)">ΔCN</button>
     <button onclick="setComparisonMetric('LD', this)">ΔL/D</button>
     <button onclick="setComparisonMetric('SM', this)">ΔStatic margin</button>
   </div>
@@ -1747,7 +1765,9 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
 
 <section id="section-drag" class="dashboard-section">
 <div class="card">
-  <h2>Drag rise: ΔCDS vs Mach</h2>
+  <h2 id="dragRiseHeading">Drag rise: ΔCDS vs Mach</h2>
+  <label for="dragRiseAxis">Axis system:</label><select id="dragRiseAxis" onchange="drawDragRisePlots();saveLastState();"><option value="W">Wind</option><option value="S" selected>Stability</option><option value="B">Body</option></select>
+  <p id="dragRiseNote" class="small" role="status"></p>
   <p class="small">Optional. To enable, add <code>"drag_rise_dir": "folder_name"</code> to a CASES entry. The script reads <code>03-RESULTS/DRAG-RISE/folder_name/drag_rise_cl*.dat</code>. One plot is created for each CLS file group.</p>
   <div id="dragRisePlots" class="analysis-plot-grid"></div>
 </div>
@@ -1868,7 +1888,7 @@ const JAMAL_DEFAULTS = {{
 
 // Mixed typography: Claude-inspired serif for words, original sans-serif for numbers.
 const WORD_FONT = 'ui-serif, Georgia, Cambria, "Times New Roman", serif';
-const NUMBER_FONT = 'Arial, Helvetica, sans-serif';
+const NUMBER_FONT = 'Consolas, "Liberation Mono", monospace';
 
 function mixedTypographyLayout(layout) {{
   const out = Object.assign({{}}, layout || {{}});
@@ -2438,6 +2458,10 @@ function filteredDragRiseCurves() {{
 function drawDragRisePlots() {{
   const container = document.getElementById("dragRisePlots");
   if (!container) return;
+  const axis=document.getElementById("dragRiseAxis").value, cdKey="CD"+axis;
+  document.getElementById("dragRiseHeading").textContent=`Drag rise: Δ${{cdKey}} vs Mach`;
+  const missing=[];
+  document.getElementById("dragRiseNote").textContent="Each increment uses the selected-axis drag at the lowest Mach point. File groups retain their original CLS target.";
 
   const curves = filteredDragRiseCurves();
 
@@ -2461,10 +2485,12 @@ function drawDragRisePlots() {{
   groupKeys.forEach((key, idx) => {{
     const traces = groups[key].map(c => {{
       const rows = (c.rows || []).slice().sort((a,b) => Number(a.MACH) - Number(b.MACH));
+      const baseline=rows.length?rows[0][cdKey]:null;
+      if(!Number.isFinite(baseline)||rows.some(r=>!Number.isFinite(r[cdKey]))) missing.push(c.file_name);
       const st = traceStyle(c.case_label, key);
       return {{
         x: rows.map(r => r.MACH),
-        y: rows.map(r => r.DELTA_CDS),
+        y: dragRiseValues(rows,axis),connectgaps:false,
         mode: st.mode,
         name: c.case_label,
         line: {{color:st.color,dash:st.dash}},
@@ -2474,8 +2500,8 @@ function drawDragRisePlots() {{
           `Drag-rise dir: ${{c.drag_rise_dir}}<br>` +
           `File: ${{c.file_name}}<br>` +
           `MACH: ${{fmt(r.MACH,4)}}<br>` +
-          `CDS: ${{fmt(r.CDS,6)}}<br>` +
-          `ΔCDS: ${{fmt(r.DELTA_CDS,6)}}<br>` +
+          `${{cdKey}}: ${{fmt(r[cdKey],6)}}<br>` +
+          `Δ${{cdKey}}: ${{fmt(Number.isFinite(baseline)&&Number.isFinite(r[cdKey])?r[cdKey]-baseline:null,6)}}<br>` +
           `Actual CLS: ${{fmt(r.CLS,6)}}<br>` +
           `POLAR: ${{r.POLAR ?? ""}}<extra></extra>`
         ),
@@ -2486,10 +2512,16 @@ function drawDragRisePlots() {{
     Plotly.newPlot(`dragRisePlot_${{idx}}`, traces, {{
       title: `Drag rise ${{key}}`,
       xaxis: {{title: "Mach"}},
-      yaxis: {{title: "ΔCDS = CDS - CDS at lowest Mach"}},
+      yaxis: {{title: `Δ${{cdKey}}`}},
       margin: {{l:70,r:30,t:50,b:50}}
     }}, {{responsive:true}});
   }});
+  if(missing.length) document.getElementById("dragRiseNote").textContent+=` Missing ${{cdKey}} values in ${{[...new Set(missing)].join(", ")}}; unavailable points are omitted.`;
+}}
+
+function dragRiseValues(rows,axis) {{
+  const key="CD"+axis, baseline=rows.length?rows[0][key]:null;
+  return rows.map(r=>Number.isFinite(baseline)&&Number.isFinite(r[key])?r[key]-baseline:null);
 }}
 
 function drawCoeffPlot(data, divId, yKey, title, yTitle) {{
@@ -2953,9 +2985,9 @@ drawAdfCoeffPlot = function() {{
 }};
 
 function coefficientPlotSpecs(axis, abscissa) {{
-  const xKey=abscissa==="CL"?coefficientKey(axis,"CL"):"ALPHA";
+  const xKey=["CL","CY"].includes(abscissa)?coefficientKey(axis,abscissa):abscissa;
   const specs=["CL","CD","CY","CM","CR","CN"]
-    .filter(base=>!(abscissa==="CL"&&base==="CL"))
+    .filter(base=>base!==abscissa)
     .map(base=>({{base,xKey,yKey:coefficientKey(axis,base),label:coefficientDisplayName(axis,base),
       id:base==="CL"?"adfCoeffPlot":`coefficient${{base}}Plot`,heading:`coefficient${{base}}Heading`}}));
   specs.push({{base:"LD",xKey,yKey:coefficientKey(axis,"CD"),clKey:coefficientKey(axis,"CL"),
@@ -2978,11 +3010,18 @@ function drawStandardAeroPlots() {{
   const abscissa=document.getElementById("coefficientAbscissa").value;
   const specs=coefficientPlotSpecs(axis,abscissa);
   document.getElementById("coefficientCLCard").hidden=abscissa==="CL";
+  document.getElementById("coefficientCYCard").hidden=abscissa==="CY";
   if(abscissa==="CL") Plotly.purge("adfCoeffPlot");
+  if(abscissa==="CY") Plotly.purge("coefficientCYPlot");
   document.getElementById("aeroCoeffHeading").textContent=`${{axisName(axis)}} coefficients vs ${{specs[0].xKey}}`;
   specs.forEach(spec=>{{
-    const title=`${{spec.label}} vs ${{spec.xKey}}`;
-    document.getElementById(spec.heading).textContent=title;
+    const title=conditionText(curves).split(" · ").reverse().join(" · ")+
+      (["CM","CR","CN"].includes(spec.base)?` · ${{referenceTitle()}}`:"");
+    const heading=document.getElementById(spec.heading);
+    heading.replaceChildren(...title.split(/([+−–-]?\\d[\\d.Ee+−–%-]*)/g).filter(Boolean).map(part=>{{
+      if(!/\\d/.test(part)) return document.createTextNode(part);
+      const span=document.createElement("span");span.className="numeric-value";span.textContent=part;return span;
+    }}));
     const traces = [];
     curves.forEach(c => {{
       const points=coefficientPlotPoints(c.rows,spec);
@@ -2993,9 +3032,8 @@ function drawStandardAeroPlots() {{
         marker:{{color:st.color,symbol:st.symbol,size:st.markerSize}},customdata:points.map(p=>customDataForCurve(c,p.row)),
         hovertemplate:`${{spec.xKey}}: %{{x:.5f}}<br>${{spec.label}}: %{{y:.6f}}<extra>%{{fullData.name}}</extra>`}});
     }});
-    const ref=["CM","CR","CN"].includes(spec.base)?referenceTitle():axisName(axis);
-    Plotly.newPlot(spec.id,traces,{{title:ref,xaxis:{{title:spec.xKey==="ALPHA"?"ALPHA [deg]":spec.xKey}},
-      yaxis:{{title:spec.label}},showlegend:true,legend:{{orientation:"h",y:-.22}},margin:{{l:65,r:20,t:45,b:95}}}},{{responsive:true}});
+    Plotly.newPlot(spec.id,traces,{{xaxis:{{title:["ALPHA","BETA"].includes(spec.xKey)?`${{spec.xKey}} [deg]`:spec.xKey}},
+      yaxis:{{title:spec.label}},showlegend:true,legend:{{orientation:"h",y:-.22}},margin:{{l:65,r:20,t:15,b:95}}}},{{responsive:true}});
   }});
   populateExportPlots();
 }}
@@ -3136,6 +3174,20 @@ function setupComparisonControls(pairs=null) {{
 
 function curveFromKey(key) {{ return (adfData.curves || []).find(c=>`${{c.case_label}}|${{c.polar}}`===key); }}
 
+function selectedComparisonSeries(ref,cmp,metric,smMap,axis,abscissa) {{
+  const xKey=["CL","CY"].includes(abscissa)?coefficientKey(axis,abscissa):abscissa;
+  const yKey=metric==="SM"?"STATIC_MARGIN_PERCENT":coefficientKey(axis,metric);
+  const yFunc=metric==="LD"?r=>Number.isFinite(r["CL"+axis])&&Number.isFinite(r["CD"+axis])&&r["CD"+axis]!==0?r["CL"+axis]/r["CD"+axis]:null:r=>r[yKey];
+  const source=c=>metric==="SM"?(smMap[`${{c.case_label}}|${{c.polar}}`]||[]):c.rows;
+  const valid=rows=>rows.filter(r=>Number.isFinite(r[xKey])&&Number.isFinite(yFunc(r)));
+  const reference=interpolationPoints(valid(source(ref)),xKey,yFunc);
+  const comparison=valid(source(cmp)),xs=[],ys=[];
+  reference.forEach(p=>{{const value=interpolateAt(comparison,xKey,yFunc,p.x);if(value!==null){{xs.push(p.x);ys.push(value-p.y);}}}});
+  return {{xs,ys,yLabel:metric==="SM"?"ΔStatic margin [% CREF]":metric==="LD"?"ΔL/D":`Δ${{metric}}${{axis}}`,
+    xAxisTitle:["ALPHA","BETA"].includes(xKey)?`${{xKey}} [deg]`:xKey,
+    comparisonNote:`Comparison interpolated on reference ${{xKey}}; duplicate coordinates averaged`}};
+}}
+
 function comparisonSeries(ref, cmp, metric, smMap) {{
   let xs=[],ys=[],yLabel="",xAxisTitle="",comparisonNote="";
   if(metric==="CL"){{
@@ -3177,9 +3229,14 @@ function drawComparisonPlot() {{
   const traces=[], allCurves=[];
   let yLabel="",xAxisTitle="";
   pairs.forEach((pair,index)=>{{
-    const ref=curveFromKey(pair.reference), cmp=curveFromKey(pair.comparison);
+    const transform=c=>{{
+      if(!c||currentMomentReferenceMode()==="original")return c;
+      const meta=summaryFor(c.case_label,c.polar)?.meta;
+      return {{...c,rows:c.rows.map(r=>shiftedRow(r,meta))}};
+    }};
+    const ref=transform(curveFromKey(pair.reference)), cmp=transform(curveFromKey(pair.comparison));
     if(!ref||!cmp) return;
-    const series=comparisonSeries(ref,cmp,comparisonMetric,smMap);
+    const series=selectedComparisonSeries(ref,cmp,comparisonMetric,smMap,document.getElementById("deltaAxis").value,document.getElementById("deltaAbscissa").value);
     if(!series.xs.length) return;
     yLabel=series.yLabel; xAxisTitle=series.xAxisTitle;
     allCurves.push(ref,cmp);
@@ -3225,7 +3282,7 @@ function setDensity(value) {{
 }}
 
 function populateExportPlots() {{
-  const ids=[...(document.getElementById("coefficientAbscissa").value==="CL"?[]:["adfCoeffPlot"]),"coefficientCDPlot","coefficientCYPlot","coefficientCMPlot","coefficientCRPlot","coefficientCNPlot","ldPlot","smClPlot","smSweepPlot","comparisonPlot","clPlot","cdPlot","cmPlot","residualSummaryPlot","residualEquationsPlot","cpmaxPlot","selectedResidualHistory","selectedAeroHistory","selectedCpHistory","outlierScorePlot"];
+  const ids=[...(document.getElementById("coefficientAbscissa").value==="CL"?[]:["adfCoeffPlot"]),"coefficientCDPlot",...(document.getElementById("coefficientAbscissa").value==="CY"?[]:["coefficientCYPlot"]),"coefficientCMPlot","coefficientCRPlot","coefficientCNPlot","ldPlot","smClPlot","smSweepPlot","comparisonPlot","clPlot","cdPlot","cmPlot","residualSummaryPlot","residualEquationsPlot","cpmaxPlot","selectedResidualHistory","selectedAeroHistory","selectedCpHistory","outlierScorePlot"];
   const previous=document.getElementById("exportPlotSelect").value;
   document.getElementById("exportPlotSelect").innerHTML=ids.map(id=>`<option value="${{id}}">${{id}}</option>`).join("");
   if(ids.includes(previous)) document.getElementById("exportPlotSelect").value=previous;
@@ -3293,9 +3350,13 @@ refreshAll=function(){{
 function updateCaseHistoryOptions(){{const select=document.getElementById("caseHistoryFilter"),old=select.value;const rows=evaluatedRows().slice().sort((a,b)=>(a.case_label+a.polar+a.case).localeCompare(b.case_label+b.polar+b.case));select.innerHTML=rows.map(r=>`<option value="${{r.case_key}}">${{r.case_label}} | ${{r.polar}} | CASE ${{r.case}} | α=${{r.alpha}} | ${{r.status}}</option>`).join("");if(rows.some(r=>r.case_key===old))select.value=old;}}
 
 const collectStateBeforeAbscissa=collectState;
-collectState=function(){{return {{...collectStateBeforeAbscissa(),coefficientAbscissa:document.getElementById("coefficientAbscissa").value}};}};
+collectState=function(){{return {{...collectStateBeforeAbscissa(),coefficientAbscissa:document.getElementById("coefficientAbscissa").value,
+  deltaAxis:document.getElementById("deltaAxis").value,deltaAbscissa:document.getElementById("deltaAbscissa").value,dragRiseAxis:document.getElementById("dragRiseAxis").value}};}};
 const applyStateBeforeAbscissa=applyState;
-applyState=function(s){{if(s)document.getElementById("coefficientAbscissa").value=s.coefficientAbscissa==="CL"?"CL":"ALPHA";return applyStateBeforeAbscissa(s);}};
+applyState=function(s){{if(s){{
+  ["coefficientAbscissa","deltaAbscissa"].forEach(id=>document.getElementById(id).value=["ALPHA","BETA","CL","CY"].includes(s[id])?s[id]:"ALPHA");
+  ["deltaAxis","dragRiseAxis"].forEach(id=>document.getElementById(id).value=["W","S","B"].includes(s[id])?s[id]:"S");
+}}return applyStateBeforeAbscissa(s);}};
 
 setupComparisonControls();populateExportPlots();refreshPresetSelect();drawIntegrity();drawProvenance();
 const lastState=storageGet("JAMAL_v24_last_state",null);
