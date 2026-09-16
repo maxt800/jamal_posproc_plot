@@ -1471,6 +1471,10 @@ select, input {{ font-family: var(--font-numbers); padding: 8px 12px; border: 1p
 button {{ font-family: var(--font-words); padding: 8px 12px; border: 1px solid #ccc; border-radius: 8px; background: white; cursor: pointer; margin-right: 8px; margin-bottom: 8px; }}
 label {{ font-family: var(--font-words); }}
 .plot {{ height: 440px; }}
+.analysis-plot-grid {{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;}}
+.analysis-plot-grid > * {{min-width:0;}}
+.analysis-plot-grid .plot {{width:100%;min-width:0;}}
+@media(max-width:760px) {{.analysis-plot-grid {{grid-template-columns:minmax(0,1fr);}}}}
 .small {{ color: #666; font-size: 12px; }}
 .badge {{ display:inline-block; padding: 6px 9px; margin: 3px; border-radius: 7px; color: white; font-size: 12px; }}
 .dashboard-nav {{ position: sticky; top: 0; z-index: 20; background: #f6f7f9; padding: 10px 0; margin-bottom: 10px; border-bottom: 1px solid #ddd; }}
@@ -1669,7 +1673,7 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
 
 <div class="card"><h2>Control-surface and flap deflections</h2><table id="deflectionTable"><thead><tr><th>Configuration</th><th>POLAR</th><th>RUD1</th><th>RUD2</th><th>RUD3</th><th>RUD4</th><th>ELV1</th><th>ELV2</th><th>ELV3</th><th>ELV4</th><th>AIL1</th><th>AIL2</th><th>AIL3</th><th>AIL4</th><th>FLP1</th><th>FLP2</th><th>FLP3</th><th>FLP4</th></tr></thead><tbody></tbody></table></div>
 
-<div class="card"><h2 id="aeroCoeffHeading">Aerodynamic coefficient vs ALPHA/BETA</h2>
+<div class="card"><h2 id="aeroCoeffHeading">Aerodynamic coefficients vs ALPHA</h2>
   <div class="controls">
     <label>Axis system:</label>
     <select id="stabilityAxisSelect" onchange="drawAdfCoeffPlot()">
@@ -1682,8 +1686,11 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
       <option value="original" selected>Original ADF reference</option>
       <option value="user">User reference point</option>
     </select>
-    <label>Coefficient:</label>
-    <select id="stabilityCoeffSelect" onchange="drawAdfCoeffPlot()">
+    <label for="coefficientAbscissa">Plot against:</label>
+    <select id="coefficientAbscissa" onchange="drawAdfCoeffPlot();saveLastState();">
+      <option value="ALPHA">ALPHA</option><option value="CL">CL</option>
+    </select>
+    <select id="stabilityCoeffSelect" hidden aria-hidden="true">
       <option value="CD">CD</option>
       <option value="CY">CY</option>
       <option value="CL" selected>CL</option>
@@ -1691,19 +1698,18 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
       <option value="CM">CM</option>
       <option value="CN">CN</option>
     </select>
-    <button onclick="setStabilityCoeff('CD')">CD</button>
-    <button onclick="setStabilityCoeff('CY')">CY</button>
-    <button onclick="setStabilityCoeff('CL')">CL</button>
-    <button onclick="setStabilityCoeff('CR')">CR</button>
-    <button onclick="setStabilityCoeff('CM')">CM</button>
-    <button onclick="setStabilityCoeff('CN')">CN</button>
   </div>
-  <p class="small">Choose Body, Stability, or Wind axes, then select one of the six coefficients. Use “Original ADF reference” to plot raw ADF coefficients, or “User reference point” to apply the editable moment-reference correction once in Body axes and rotate the corrected moment vector to Stability and Wind axes.</p>
-  <div id="adfCoeffPlot" class="plot"></div>
+  <p class="small">Choose Body, Stability, or Wind axes and plot against ALPHA or the selected-axis CL. Each coefficient has its own plot; CL versus itself is omitted. L/D uses CL/CD in the chosen axes. Moment plots use the selected reference point.</p>
 </div>
-<div class="card"><h2 id="dragPolarHeading">Drag polar</h2><div id="dragPolarPlot" class="plot"></div></div>
-<div class="card"><h2 id="cmClHeading">Pitching moment</h2><div id="cmClPlot" class="plot"></div></div>
+<div id="coefficientPlots" class="analysis-plot-grid">
+<div class="card" id="coefficientCLCard"><h2 id="coefficientCLHeading">CL</h2><div id="adfCoeffPlot" class="plot"></div></div>
+<div class="card"><h2 id="coefficientCDHeading">CD</h2><div id="coefficientCDPlot" class="plot"></div></div>
+<div class="card"><h2 id="coefficientCYHeading">CY</h2><div id="coefficientCYPlot" class="plot"></div></div>
+<div class="card"><h2 id="coefficientCMHeading">CM</h2><div id="coefficientCMPlot" class="plot"></div></div>
+<div class="card"><h2 id="coefficientCRHeading">CR</h2><div id="coefficientCRPlot" class="plot"></div></div>
+<div class="card"><h2 id="coefficientCNHeading">CN</h2><div id="coefficientCNPlot" class="plot"></div></div>
 <div class="card"><h2 id="ldHeading">L/D</h2><div id="ldPlot" class="plot"></div></div>
+</div>
 </section>
 
 <section id="section-static-margin" class="dashboard-section">
@@ -1712,8 +1718,10 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
   <p class="small">The active moment reference is controlled in the Coefficients tab. Static-margin plots update automatically when that reference changes.</p>
   <button onclick="showSection('aero', document.querySelector('#dashboardNav button[data-section=&quot;aero&quot;]'))">Open moment-reference controls</button>
 </div>
+<div class="analysis-plot-grid">
 <div class="card"><h2 id="smClHeading">Static margin vs CLS</h2><div id="smClPlot" class="plot"></div></div>
 <div class="card"><h2 id="smSweepHeading">Static margin vs ALPHA/BETA</h2><div id="smSweepPlot" class="plot"></div></div>
+</div>
 </section>
 
 <section id="section-comparison" class="dashboard-section">
@@ -1741,11 +1749,12 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
 <div class="card">
   <h2>Drag rise: ΔCDS vs Mach</h2>
   <p class="small">Optional. To enable, add <code>"drag_rise_dir": "folder_name"</code> to a CASES entry. The script reads <code>03-RESULTS/DRAG-RISE/folder_name/drag_rise_cl*.dat</code>. One plot is created for each CLS file group.</p>
-  <div id="dragRisePlots"></div>
+  <div id="dragRisePlots" class="analysis-plot-grid"></div>
 </div>
 </section>
 
 <section id="section-convergence" class="dashboard-section">
+<div class="analysis-plot-grid">
 <div class="card"><h2>Convergence CLZB vs alpha</h2><div id="clPlot" class="plot"></div></div>
 <div class="card"><h2>Convergence CDXB vs alpha</h2><div id="cdPlot" class="plot"></div></div>
 <div class="card"><h2>Convergence CMYB vs alpha</h2><div id="cmPlot" class="plot"></div></div>
@@ -1773,6 +1782,7 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
   <div id="residualEquationsPlot" class="plot"></div>
 </div>
 <div class="card"><h2>cp-max diagnostics</h2><div id="cpmaxPlot" class="plot"></div></div>
+</div>
 
 <div class="card">
   <h2>Detailed selected case history</h2>
@@ -1780,9 +1790,11 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
   <div id="selectedCaseSummary" class="status-panel"></div>
   <h3>Final-window statistics</h3>
   <div class="table-scroll"><table id="finalWindowStatsTable"><thead><tr><th>Monitor</th><th>Mean</th><th>Minimum</th><th>Maximum</th><th>Standard deviation</th><th>Drift / 100 iters</th></tr></thead><tbody></tbody></table></div>
+  <div class="analysis-plot-grid">
   <div id="selectedResidualHistory" class="plot"></div>
   <div id="selectedAeroHistory" class="plot"></div>
   <div id="selectedCpHistory" class="plot"></div>
+  </div>
 </div>
 </section>
 
@@ -2936,52 +2948,56 @@ function currentAxisKeys() {{
 }}
 
 drawAdfCoeffPlot = function() {{
-  const curves = currentAdfCurves();
-  const selectedAxis = document.getElementById("stabilityAxisSelect").value || "S";
-  const selectedBaseCoeff = document.getElementById("stabilityCoeffSelect").value || "CL";
-  const selectedCoeff = coefficientKey(selectedAxis, selectedBaseCoeff);
-  const coeffLabel = coefficientDisplayName(selectedAxis, selectedBaseCoeff);
-  let sweepName = curves.length ? curves[0].sweep_var : "ALPHA";
-  const traces = [];
-  curves.forEach(c => {{
-    const rows = c.rows.filter(r => r[selectedCoeff] !== undefined);
-    if (!rows.length) return;
-    sweepName = c.sweep_var || sweepName;
-    const st = traceStyle(c.case_label, c.polar);
-    traces.push({{
-      x: rows.map(r => r[c.sweep_var]), y: rows.map(r => r[selectedCoeff]), mode:st.mode,
-      name:`${{c.case_label}} ${{c.polar.replace("POLAR-","P")}}`, line:{{color:st.color,dash:st.dash}}, marker:{{color:st.color,symbol:st.symbol,size:st.markerSize}},
-      customdata: rows.map(r => customDataForCurve(c,r)),
-      text: rows.map(r => `Configuration: ${{c.case_label}}<br>POLAR: ${{c.polar}}<br>Axis: ${{axisName(selectedAxis)}}<br>${{c.sweep_var}}: ${{fmt(r[c.sweep_var],3)}}<br>${{coeffLabel}}: ${{fmt(r[selectedCoeff],6)}}<br>${{referenceTitle()}}<extra></extra>`), hovertemplate:"%{{text}}"
-    }});
-  }});
-  const ref = ["CR","CM","CN"].includes(selectedBaseCoeff) ? ` · ${{referenceTitle()}}` : "";
-  const title = `${{axisName(selectedAxis)}} ${{coeffLabel}} vs ${{sweepName}}${{ref}} · ${{conditionText(curves)}}`;
-  document.getElementById("aeroCoeffHeading").textContent = `${{axisName(selectedAxis)}} coefficient vs ${{sweepName}}`;
-  Plotly.newPlot("adfCoeffPlot", traces, {{title, xaxis:{{title:`${{sweepName}} [deg]`}}, yaxis:{{title:coeffLabel}}, margin:{{l:60,r:30,t:55,b:50}}}}, {{responsive:true}});
+  drawStandardAeroPlots();
+  saveLastState();
 }};
+
+function coefficientPlotSpecs(axis, abscissa) {{
+  const xKey=abscissa==="CL"?coefficientKey(axis,"CL"):"ALPHA";
+  const specs=["CL","CD","CY","CM","CR","CN"]
+    .filter(base=>!(abscissa==="CL"&&base==="CL"))
+    .map(base=>({{base,xKey,yKey:coefficientKey(axis,base),label:coefficientDisplayName(axis,base),
+      id:base==="CL"?"adfCoeffPlot":`coefficient${{base}}Plot`,heading:`coefficient${{base}}Heading`}}));
+  specs.push({{base:"LD",xKey,yKey:coefficientKey(axis,"CD"),clKey:coefficientKey(axis,"CL"),
+    label:"L/D",id:"ldPlot",heading:"ldHeading"}});
+  return specs;
+}}
+
+function coefficientPlotPoints(rows, spec) {{
+  return rows.filter(r=>Number.isFinite(r[spec.xKey])).map(r=>{{
+    const value=spec.base==="LD"
+      ? (Number.isFinite(r[spec.clKey])&&Number.isFinite(r[spec.yKey])&&r[spec.yKey]!==0?r[spec.clKey]/r[spec.yKey]:null)
+      : r[spec.yKey];
+    return {{row:r,x:r[spec.xKey],y:Number.isFinite(value)?value:null}};
+  }}).sort((a,b)=>a.x-b.x);
+}}
 
 function drawStandardAeroPlots() {{
   const curves = currentAdfCurves();
-  const cond = conditionText(curves);
-  const keys = currentAxisKeys();
-  const make = (divId, xKey, yKey, title, xLabel, yLabel, yFunc=null) => {{
+  const axis=document.getElementById("stabilityAxisSelect").value||"S";
+  const abscissa=document.getElementById("coefficientAbscissa").value;
+  const specs=coefficientPlotSpecs(axis,abscissa);
+  document.getElementById("coefficientCLCard").hidden=abscissa==="CL";
+  if(abscissa==="CL") Plotly.purge("adfCoeffPlot");
+  document.getElementById("aeroCoeffHeading").textContent=`${{axisName(axis)}} coefficients vs ${{specs[0].xKey}}`;
+  specs.forEach(spec=>{{
+    const title=`${{spec.label}} vs ${{spec.xKey}}`;
+    document.getElementById(spec.heading).textContent=title;
     const traces = [];
     curves.forEach(c => {{
-      const rows = c.rows.filter(r => r[xKey] !== undefined && r[yKey] !== undefined);
-      if (!rows.length) return;
-      const vals = rows.map(r => yFunc ? yFunc(r) : r[yKey]);
+      const points=coefficientPlotPoints(c.rows,spec);
+      if (!points.some(p=>p.y!==null)) return;
       const st = traceStyle(c.case_label,c.polar);
-      traces.push({{x:rows.map(r=>r[xKey]),y:vals,mode:st.mode,name:`${{c.case_label}} ${{c.polar.replace("POLAR-","P")}}`,line:{{color:st.color,dash:st.dash}},marker:{{color:st.color,symbol:st.symbol,size:st.markerSize}},customdata:rows.map(r=>customDataForCurve(c,r)),text:rows.map((r,i)=>`Configuration: ${{c.case_label}}<br>POLAR: ${{c.polar}}<br>${{xLabel}}: ${{fmt(r[xKey],6)}}<br>${{yLabel}}: ${{fmt(vals[i],6)}}<extra></extra>`),hovertemplate:"%{{text}}"}});
+      traces.push({{x:points.map(p=>p.x),y:points.map(p=>p.y),connectgaps:false,mode:st.mode,
+        name:`${{c.case_label}} ${{c.polar.replace("POLAR-","P")}}`,line:{{color:st.color,dash:st.dash}},
+        marker:{{color:st.color,symbol:st.symbol,size:st.markerSize}},customdata:points.map(p=>customDataForCurve(c,p.row)),
+        hovertemplate:`${{spec.xKey}}: %{{x:.5f}}<br>${{spec.label}}: %{{y:.6f}}<extra>%{{fullData.name}}</extra>`}});
     }});
-    Plotly.newPlot(divId,traces,{{title:`${{title}} · ${{cond}}`,xaxis:{{title:xLabel}},yaxis:{{title:yLabel}},margin:{{l:65,r:30,t:55,b:50}}}},{{responsive:true}});
-  }};
-  make("dragPolarPlot","CLS","CDS","Drag polar: CDS vs CLS","CLS","CDS");
-  make("cmClPlot",keys.cl,keys.cm,`${{keys.cmLabel}} vs ${{keys.clLabel}} · ${{referenceTitle()}}`,keys.clLabel,keys.cmLabel);
-  make("ldPlot","CLS","CDS","L/D vs CLS","CLS","L/D",r=>Number(r.CLS)/Number(r.CDS));
-  document.getElementById("dragPolarHeading").textContent = "Drag polar";
-  document.getElementById("cmClHeading").textContent = `${{keys.cmLabel}} vs ${{keys.clLabel}}`;
-  document.getElementById("ldHeading").textContent = "L/D vs CLS";
+    const ref=["CM","CR","CN"].includes(spec.base)?referenceTitle():axisName(axis);
+    Plotly.newPlot(spec.id,traces,{{title:ref,xaxis:{{title:spec.xKey==="ALPHA"?"ALPHA [deg]":spec.xKey}},
+      yaxis:{{title:spec.label}},showlegend:true,legend:{{orientation:"h",y:-.22}},margin:{{l:65,r:20,t:45,b:95}}}},{{responsive:true}});
+  }});
+  populateExportPlots();
 }}
 
 const baseDrawSmPlotsV19 = drawSmPlots;
@@ -3209,8 +3225,10 @@ function setDensity(value) {{
 }}
 
 function populateExportPlots() {{
-  const ids=["adfCoeffPlot","dragPolarPlot","cmClPlot","ldPlot","smClPlot","smSweepPlot","comparisonPlot","clPlot","cdPlot","cmPlot","residualSummaryPlot","residualEquationsPlot","cpmaxPlot","selectedResidualHistory","selectedAeroHistory","selectedCpHistory","outlierScorePlot"];
+  const ids=[...(document.getElementById("coefficientAbscissa").value==="CL"?[]:["adfCoeffPlot"]),"coefficientCDPlot","coefficientCYPlot","coefficientCMPlot","coefficientCRPlot","coefficientCNPlot","ldPlot","smClPlot","smSweepPlot","comparisonPlot","clPlot","cdPlot","cmPlot","residualSummaryPlot","residualEquationsPlot","cpmaxPlot","selectedResidualHistory","selectedAeroHistory","selectedCpHistory","outlierScorePlot"];
+  const previous=document.getElementById("exportPlotSelect").value;
   document.getElementById("exportPlotSelect").innerHTML=ids.map(id=>`<option value="${{id}}">${{id}}</option>`).join("");
+  if(ids.includes(previous)) document.getElementById("exportPlotSelect").value=previous;
 }}
 function exportSelectedPlot(format) {{
   const id=document.getElementById("exportPlotSelect").value||selectedPlotId; const div=document.getElementById(id); if(!div||!div.data)return alert("Plot is not available in the current view.");
@@ -3267,12 +3285,17 @@ drawDragRisePlots=function(){{baseDrawDragRisePlotsV19();setTimeout(()=>document
 const baseRefreshAllV19=refreshAll;
 refreshAll=function(){{
   const data=getFilteredRows();updateMomentRefInfo();updateCaseHistoryOptions();drawKpis(data);drawAssessmentKpis(data);drawStatusMap(data);
-  drawAdfCoeffPlot();drawStandardAeroPlots();drawSmPlots();drawComparisonPlot();drawDragRisePlots();
+  drawAdfCoeffPlot();drawSmPlots();drawComparisonPlot();drawDragRisePlots();
   drawCoeffPlot(data,"clPlot","clzb_final","CLZB vs alpha","CLZB");drawCoeffPlot(data,"cdPlot","cdxb_final","CDXB vs alpha","CDXB");drawCoeffPlot(data,"cmPlot","cmyb_final","CMYB vs alpha","CMYB");
   drawResidualSummaryPlot(data);drawResidualEquationsPlot(data);drawCpmaxPlot(data);drawClassificationTable(data);drawOutlierDiagnostics(data);drawMeshQuality();drawDeflections();drawDiagnostics();drawTable(data);drawSelectedCaseSummary();drawIntegrity();drawProvenance();const fm={{all:"All curves",baseline:"Baseline only",selected:"Selected curve only",selected_baseline:"Selected + baseline",none:"All curves hidden"}};document.getElementById("focusModeLabel").textContent=fm[focusMode]||focusMode;saveLastState();
 }};
 
 function updateCaseHistoryOptions(){{const select=document.getElementById("caseHistoryFilter"),old=select.value;const rows=evaluatedRows().slice().sort((a,b)=>(a.case_label+a.polar+a.case).localeCompare(b.case_label+b.polar+b.case));select.innerHTML=rows.map(r=>`<option value="${{r.case_key}}">${{r.case_label}} | ${{r.polar}} | CASE ${{r.case}} | α=${{r.alpha}} | ${{r.status}}</option>`).join("");if(rows.some(r=>r.case_key===old))select.value=old;}}
+
+const collectStateBeforeAbscissa=collectState;
+collectState=function(){{return {{...collectStateBeforeAbscissa(),coefficientAbscissa:document.getElementById("coefficientAbscissa").value}};}};
+const applyStateBeforeAbscissa=applyState;
+applyState=function(s){{if(s)document.getElementById("coefficientAbscissa").value=s.coefficientAbscissa==="CL"?"CL":"ALPHA";return applyStateBeforeAbscissa(s);}};
 
 setupComparisonControls();populateExportPlots();refreshPresetSelect();drawIntegrity();drawProvenance();
 const lastState=storageGet("JAMAL_v24_last_state",null);

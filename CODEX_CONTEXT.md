@@ -1,5 +1,16 @@
 # Current update: v25.3 (2026-09-13)
 
+2026-09-16: Two-column responsive layouts now cover spanwise cl/cl.c, coefficients,
+static margin, drag rise and convergence (including selected-case histories).
+Cp station panels are unchanged. Coefficients display CL, CD, CY, CM, CR, CN and
+L/D using the selected Body/Stability/Wind axes and ALPHA or selected-axis CL.
+CL versus itself is hidden; redundant standalone drag-polar/moment plots are
+removed. Moment-reference transformations remain unchanged. The abscissa is
+saved in presets and last-view state; exports include the new coefficient plots.
+All 28 tests pass, including axis mapping, CL omission, L/D zero/missing-value
+handling and the protected scientific regressions. Browser checks cover all
+three axes, both abscissas, saved state, and the requested two-column layouts.
+
 2026-09-15: Cp rendering first attaches every grid panel, then measures and draws
 them. This prevents early stations (especially -100%) from using a temporary
 full-grid width and expanding their chord axis. Airfoil height adapts to panel

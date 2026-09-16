@@ -179,6 +179,37 @@ assert.deepEqual(cl.xs,[0,2]); assert.deepEqual(cl.ys,[-.25,.5]);
         result = subprocess.run([node, str(path)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_coefficient_grid_axis_abscissa_and_ratio(self):
+        html = self.html()
+        js = "const assert=require('node:assert/strict');\n"
+        js += html[html.index('function coefficientKey('):html.index('function coefficientDisplayName(')]
+        js += 'function coefficientDisplayName(axis,base){return base+axis;}\n'
+        js += html[html.index('function coefficientPlotSpecs('):html.index('function drawStandardAeroPlots(')]
+        js += r'''
+for(const axis of ['B','S','W']) {
+  for(const abscissa of ['ALPHA','CL']) {
+    const specs=coefficientPlotSpecs(axis,abscissa);
+    assert.equal(specs.length,abscissa==='ALPHA'?7:6);
+    assert.equal(specs.some(s=>s.base==='CL'),abscissa==='ALPHA');
+    specs.forEach(s=>assert.equal(s.xKey,abscissa==='ALPHA'?'ALPHA':'CL'+axis));
+    assert.equal(specs.find(s=>s.base==='CM').yKey,'CM'+axis+'25');
+    assert.equal(specs.find(s=>s.base==='CR').yKey,'CR'+axis+'25');
+    assert.equal(specs.find(s=>s.base==='CN').yKey,'CN'+axis+'25');
+    const rows=[{ALPHA:2,['CL'+axis]:.6,['CD'+axis]:.03},
+                {ALPHA:0,['CL'+axis]:.2,['CD'+axis]:0},
+                {ALPHA:1,['CL'+axis]:.4,['CD'+axis]:null}];
+    const pts=coefficientPlotPoints(rows,specs.find(s=>s.base==='LD'));
+    assert.deepEqual(pts.map(p=>p.y),[null,null,20]);
+    assert.deepEqual(pts.map(p=>p.x),abscissa==='ALPHA'?[0,1,2]:[.2,.4,.6]);
+    assert.equal(pts[2].row,rows[0]);
+  }
+}
+'''
+        path = self.base / 'coefficient_grid_checks.js'
+        path.write_text(js, encoding='utf-8')
+        result = subprocess.run([shutil.which('node'), str(path)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
 
 if __name__ == '__main__':
     unittest.main()

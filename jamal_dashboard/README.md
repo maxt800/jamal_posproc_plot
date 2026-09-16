@@ -1,5 +1,13 @@
 # JAMAL Aerodynamic Results Dashboard v25.3
 
+Coefficients now shows CL, CD, CY, CM, CR, CN and L/D in a two-column grid.
+Choose Body, Stability or Wind axes, then ALPHA or selected-axis CL as the
+horizontal coordinate. CL versus itself is omitted. The moment reference
+applies to all moment plots, and L/D uses CL/CD from the chosen axes.
+The chosen horizontal coordinate is retained in saved views and presets.
+Spanwise cl/cl.c, static margin, drag rise and convergence also use two columns,
+stacking on screens below 760 px. The Cp station layout is unchanged.
+
 Each Cp station panel includes its section outline underneath, using a shared
 x/c axis and an independent y/c axis with equal geometric scaling. The ordinate
 comes directly from the section file divided by local chord (no sign change,
