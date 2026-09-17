@@ -121,7 +121,7 @@ FLUENT_LOG_NAMES = [
 ]
 
 # Module versions shown in the dashboard and JSON output.
-SCRIPT_VERSION = "v25.4"
+SCRIPT_VERSION = "v25.5"
 MODULE_VERSIONS = {
     "infout parser": "1.3",
     "Distributions": jamal_distributions.VERSION,
@@ -547,7 +547,7 @@ def load_drag_rise_data(cases: Sequence[CaseConfig]) -> Dict:
             try:
                 cls_label, cls_value = parse_drag_rise_cls_from_filename(path)
                 df = read_drag_rise_file(path)
-                cols = [c for c in ["POLAR", "MACH", "REYNOLDS", "ALPHA", "BETA", "CDB", "CDW", "CDS", "CLS", "DELTA_CDS"] if c in df.columns]
+                cols = [c for c in ["POLAR", "MACH", "REYNOLDS", "ALPHA", "BETA", "CDB", "CDW", "CDS", "CLB", "CLW", "CLS", "DELTA_CDS"] if c in df.columns]
                 curves.append({
                     "case_label": case.label,
                     "drag_rise_dir": str(case.drag_rise_dir),
@@ -1441,7 +1441,7 @@ def make_html(summaries, conv_rows, history, adf_data, drag_rise_data, provenanc
 
 :root {{
   --font-words: ui-serif, Georgia, Cambria, "Times New Roman", serif;
-  --font-numbers: "Consolas", "Liberation Mono", monospace;
+  --font-numbers: Arial, Helvetica, sans-serif;
 }}
 body {{ font-family: Arial, Helvetica, sans-serif; margin: 24px; background: #f6f7f9; color: #222; }}
 h1, h2, h3 {{ margin-bottom: 8px; font-family: var(--font-words); font-weight: 600; letter-spacing: -0.015em; }}
@@ -1478,8 +1478,7 @@ label {{ font-family: var(--font-words); }}
 .coefficient-row {{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}}
 .coefficient-row > * {{min-width:0;}}
 .coefficient-row h2 {{font-size:17px;}}
-.numeric-value {{font-family:var(--font-numbers);font-variant-numeric:tabular-nums lining-nums;}}
-.plot .xtick text,.plot .ytick text,.plot .y2tick text,input,td {{font-variant-numeric:tabular-nums lining-nums;}}
+.numeric-value {{font-family:var(--font-numbers);}}
 @media(max-width:760px) {{.coefficient-row {{grid-template-columns:minmax(0,1fr);}}}}
 @media(max-width:760px) {{.analysis-plot-grid {{grid-template-columns:minmax(0,1fr);}}}}
 .small {{ color: #666; font-size: 12px; }}
@@ -1888,7 +1887,7 @@ const JAMAL_DEFAULTS = {{
 
 // Mixed typography: Claude-inspired serif for words, original sans-serif for numbers.
 const WORD_FONT = 'ui-serif, Georgia, Cambria, "Times New Roman", serif';
-const NUMBER_FONT = 'Consolas, "Liberation Mono", monospace';
+const NUMBER_FONT = 'Arial, Helvetica, sans-serif';
 
 function mixedTypographyLayout(layout) {{
   const out = Object.assign({{}}, layout || {{}});
@@ -2479,7 +2478,7 @@ function drawDragRisePlots() {{
 
   const groupKeys = Object.keys(groups).sort();
   container.innerHTML = groupKeys.map((key, idx) =>
-    `<div style="margin-top: 10px;"><h3>${{key}}</h3><div id="dragRisePlot_${{idx}}" class="plot"></div></div>`
+    `<div style="margin-top: 10px;"><h3>${{dragRiseLiftLabel(groups[key],axis)}}</h3><div id="dragRisePlot_${{idx}}" class="plot"></div></div>`
   ).join("");
 
   groupKeys.forEach((key, idx) => {{
@@ -2502,7 +2501,7 @@ function drawDragRisePlots() {{
           `MACH: ${{fmt(r.MACH,4)}}<br>` +
           `${{cdKey}}: ${{fmt(r[cdKey],6)}}<br>` +
           `Δ${{cdKey}}: ${{fmt(Number.isFinite(baseline)&&Number.isFinite(r[cdKey])?r[cdKey]-baseline:null,6)}}<br>` +
-          `Actual CLS: ${{fmt(r.CLS,6)}}<br>` +
+          `Actual CL${{axis}}: ${{fmt(r["CL"+axis],6)}}<br>` +
           `POLAR: ${{r.POLAR ?? ""}}<extra></extra>`
         ),
         hovertemplate: "%{{text}}"
@@ -2510,13 +2509,22 @@ function drawDragRisePlots() {{
     }});
 
     Plotly.newPlot(`dragRisePlot_${{idx}}`, traces, {{
-      title: `Drag rise ${{key}}`,
+      title: `Drag rise ${{dragRiseLiftLabel(groups[key],axis)}}`,
       xaxis: {{title: "Mach"}},
       yaxis: {{title: `Δ${{cdKey}}`}},
       margin: {{l:70,r:30,t:50,b:50}}
     }}, {{responsive:true}});
   }});
   if(missing.length) document.getElementById("dragRiseNote").textContent+=` Missing ${{cdKey}} values in ${{[...new Set(missing)].join(", ")}}; unavailable points are omitted.`;
+}}
+
+function dragRiseLiftLabel(curves,axis) {{
+  const key="CL"+axis;
+  const values=curves.flatMap(c=>(c.rows||[]).map(r=>r[key])).filter(Number.isFinite);
+  if(!values.length) return `${{key}} unavailable`;
+  const low=Math.min(...values), high=Math.max(...values);
+  const value=fmt(low,3)===fmt(high,3)?fmt(low,3):`${{fmt(low,3)}} to ${{fmt(high,3)}}`;
+  return `${{key}} = ${{value}}`;
 }}
 
 function dragRiseValues(rows,axis) {{

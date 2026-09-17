@@ -50,7 +50,7 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 
-APP_VERSION = "v25.4"
+APP_VERSION = "v25.5"
 ENGINE_FILENAME = "jamal_polar_convergence_dashboard_v25.py"
 MAX_CONFIGURATIONS = 5
 DEFAULT_OUTPUT_NAME = "dashboard"
@@ -428,7 +428,7 @@ def _drag_rise_incremental(normalized: List[Dict[str, Any]], cache_dir: Path, fo
                 action = "modified" if cached else "new"
                 cls_label, cls_value = ENGINE.parse_drag_rise_cls_from_filename(path)
                 df = ENGINE.read_drag_rise_file(path)
-                cols = [c for c in ["POLAR", "MACH", "REYNOLDS", "ALPHA", "BETA", "CDB", "CDW", "CDS", "CLS", "DELTA_CDS"] if c in df.columns]
+                cols = [c for c in ["POLAR", "MACH", "REYNOLDS", "ALPHA", "BETA", "CDB", "CDW", "CDS", "CLB", "CLW", "CLS", "DELTA_CDS"] if c in df.columns]
                 curve = {
                     "case_label": cfg["label"], "drag_rise_dir": str(folder_name), "path": str(path),
                     "modified": ENGINE.datetime.fromtimestamp(path.stat().st_mtime, tz=ENGINE.timezone.utc).isoformat(),

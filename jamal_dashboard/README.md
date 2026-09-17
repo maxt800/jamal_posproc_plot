@@ -1,4 +1,4 @@
-# JAMAL Aerodynamic Results Dashboard v25.4
+# JAMAL Aerodynamic Results Dashboard v25.5
 
 Coefficients shows three force plots in a row, then three moment plots below,
 followed by L/D. Choose Body, Stability or Wind axes, then ALPHA, BETA,
@@ -9,7 +9,8 @@ Delta also provides independent axis and coordinate selectors. Drag rise support
 all three axes using their source drag columns and a lowest-Mach baseline;
 file groups retain their original CLS targets. Missing axis data is reported.
 These controls are retained in saved views and presets. Numeric ticks and values
-use an aligned monospace font; word headings retain their existing typography.
+use the original Arial font; word headings retain their existing typography.
+Drag-rise titles show the selected-axis lift coefficient and its actual range.
 Spanwise cl/cl.c, static margin, drag rise and convergence also use two columns,
 stacking on screens below 760 px. The Cp station layout is unchanged.
 

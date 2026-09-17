@@ -1,4 +1,10 @@
-# Current update: v25.4 (2026-09-16)
+# Current update: v25.5 (2026-09-17)
+
+Restored previous Arial numeric font and removed the tabular-number override.
+Drag-rise card/plot titles and hover lift values now follow the chosen axes:
+CLW, CLS or CLB. Titles show actual lift values or ranges, not relabeled CLS
+filename targets. File grouping remains unchanged. Both loaders retain CLW/CLB;
+the version bump refreshes cached data. All 29 regression tests pass.
 
 Coefficients now supports ALPHA, BETA, selected-axis CL and CY. Three force
 panels form the first row and three moment panels the second; self-plots are
