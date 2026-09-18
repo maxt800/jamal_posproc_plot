@@ -1,5 +1,17 @@
 # Current update: v25.5 (2026-09-17)
 
+2026-09-18: Plot-first layout trial on codex/plot-first-layout. Previous validated
+version 696c0fd was pushed to GitHub main before edits. Summary now collapses
+to a status strip, secondary view controls open from the toolbar, and moment
+reference and deflection details are collapsible. Coefficients retain three force
+and three moment panels with shared conditions, moment-row reference and a
+shared clickable legend. L/D opens on demand. Non-Cp plots have nearby PNG/SVG
+and Expand actions; expanded plots retain legends. Cp/Distributions modules
+and scientific calculations are unchanged. Browser checks verify shared curve
+visibility, expansion/close, L/D sizing, PNG action, reference controls and no
+new Cp buttons. All 29 regression tests pass. This trial is local; main preserves
+the requested pre-layout checkpoint.
+
 Restored previous Arial numeric font and removed the tabular-number override.
 Drag-rise card/plot titles and hover lift values now follow the chosen axes:
 CLW, CLS or CLB. Titles show actual lift values or ranges, not relabeled CLS

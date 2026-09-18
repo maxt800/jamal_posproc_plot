@@ -1,5 +1,11 @@
 # JAMAL Aerodynamic Results Dashboard v25.5
 
+Plot-first layout trial: summary and reference details are collapsible, coefficient
+conditions and curve visibility controls are shared, and L/D opens under Additional
+plots. Expand, PNG and SVG actions are available beside analysis plots. The existing
+Cp and spanwise distribution interface is preserved. The pre-layout version is
+saved on GitHub main at 696c0fd; this trial uses codex/plot-first-layout.
+
 Coefficients shows three force plots in a row, then three moment plots below,
 followed by L/D. Choose Body, Stability or Wind axes, then ALPHA, BETA,
 selected-axis CL or CY as the horizontal coordinate. Self-plots are omitted.

@@ -1531,6 +1531,38 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
   .toolbar-separator {{ display: none; }}
   body {{ margin: 12px; }}
 }}
+.dashboard-hero {{margin-bottom:8px;}}
+.dashboard-hero h1 {{font-size:26px;}}
+.dashboard-tagline {{display:none;}}
+.workspace-details {{padding:12px 16px;}}
+.workspace-details summary,.toolbar-options summary {{cursor:pointer;font-family:var(--font-words);font-weight:600;}}
+.workspace-details[open] summary {{margin-bottom:14px;}}
+#summaryPanel {{margin-bottom:10px;}}
+#compactStatus {{margin-left:16px;font-family:var(--font-numbers);font-weight:400;}}
+.analysis-toolbar {{padding:10px 14px;margin-bottom:12px;}}
+.toolbar-row select,.toolbar-row button {{margin-bottom:0;}}
+.toolbar-options {{position:relative;}}
+.toolbar-options > .toolbar-row {{position:absolute;right:0;top:30px;width:min(480px,80vw);padding:16px;background:white;box-shadow:0 8px 30px #0002;border:1px solid #d7dce2;border-radius:10px;}}
+.coefficient-controls {{padding:12px 16px;margin-bottom:10px;}}
+.coefficient-controls h2,.coefficient-controls p {{display:none;}}
+.coefficient-controls .controls {{margin:0;}}
+.coefficient-controls select {{margin-bottom:0;}}
+.workspace-context {{font-family:var(--font-words);color:#46515f;padding:8px 2px 12px;}}
+.shared-legend {{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}}
+.shared-legend button {{font-family:var(--font-numbers);font-size:12px;margin:0;}}
+.shared-legend button[aria-pressed="false"] {{opacity:.45;text-decoration:line-through;}}
+.legend-swatch {{display:inline-block;width:26px;margin-right:8px;vertical-align:middle;border-top:3px solid;}}
+.plot-actions {{display:flex;justify-content:flex-end;gap:4px;margin:0 0 2px;}}
+.plot-actions button {{padding:4px 8px;font-size:12px;margin:0;}}
+#coefficientPlots .card {{padding:12px;margin-bottom:10px;}}
+#coefficientPlots h2 {{display:none;}}
+#plotDialog {{width:90vw;max-width:1600px;border:1px solid #d7dce2;border-radius:14px;padding:18px;}}
+#plotDialog::backdrop {{background:rgba(25,35,50,.55);}}
+#plotDialog .plot {{height:72vh;}}
+#plotDialog header {{display:flex;justify-content:space-between;align-items:center;}}
+#plotDialog h2 {{margin:0;}}
+#referencePanel .controls,#momentRefInfo {{overflow-x:auto;}}
+@media(max-width:900px) {{.toolbar-options > .toolbar-row {{position:static;width:auto;}}}}
 </style>
 </head>
 <body>
@@ -1550,11 +1582,11 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
   <button data-section="tables" onclick="showSection('tables', this)">Tables</button>
 </div>
 
-<div class="card">
-  <h2>Summary</h2>
+<details class="card workspace-details" id="summaryPanel">
+  <summary>Run summary <span id="compactStatus" class="small"></span></summary>
   <div id="kpis"></div>
   <p class="small">Aerodynamic data files are read from 03-RESULTS/ADF. Convergence histories are read from 02-RUNS/POLAR-XXX/infout and FLUENT_LOG.</p>
-</div>
+</details>
 
 <div class="card analysis-toolbar" id="analysisToolbar">
   <div class="toolbar-row">
@@ -1563,7 +1595,7 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
     <label>Status:</label><select id="statusFilter" onchange="refreshAll()">
       <option value="ALL">ALL</option><option value="CONVERGED">CONVERGED</option><option value="ACCEPTABLE">ACCEPTABLE</option><option value="SUSPICIOUS">SUSPICIOUS</option><option value="DIVERGED">DIVERGED</option>
     </select>
-    <span class="toolbar-separator"></span>
+    <details class="toolbar-options"><summary>View options</summary><div class="toolbar-row">
     <button onclick="setFocusMode('all')">Show all</button>
     <button onclick="setFocusMode('baseline')">Baseline only</button>
     <button onclick="setFocusMode('selected')">Focus selected</button>
@@ -1575,6 +1607,7 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
     <label>Density:</label><select id="densitySelect" onchange="setDensity(this.value)">
       <option value="compact">Compact</option><option value="comfortable" selected>Comfortable</option><option value="presentation">Presentation</option>
     </select>
+    </div></details>
     <button onclick="toggleAdvancedPanel()">Controls &amp; export</button>
   </div>
 </div>
@@ -1658,7 +1691,7 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
 </section>
 
 <section id="section-aero" class="dashboard-section">
-<div class="card"><h2>Moment reference point</h2>
+<details class="card workspace-details" id="referencePanel"><summary>Moment reference <span id="referenceSummary"></span> · Edit</summary>
   <p class="small">Default mode applies the selected %MAC independently to each POLAR using its own XREF and CREF from infout; Y and Z shifts are added to each POLAR's own YREF/ZREF. Use absolute XYZ only when you want every POLAR shifted to the same aircraft coordinate.</p>
   <div class="controls">
     <label>Reference mode:</label>
@@ -1675,11 +1708,11 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
     <button onclick="resetMomentReference()">Reset to 25% MAC</button>
   </div>
   <div id="momentRefInfo" class="small"></div>
-</div>
+</details>
 
-<div class="card"><h2>Control-surface and flap deflections</h2><table id="deflectionTable"><thead><tr><th>Configuration</th><th>POLAR</th><th>RUD1</th><th>RUD2</th><th>RUD3</th><th>RUD4</th><th>ELV1</th><th>ELV2</th><th>ELV3</th><th>ELV4</th><th>AIL1</th><th>AIL2</th><th>AIL3</th><th>AIL4</th><th>FLP1</th><th>FLP2</th><th>FLP3</th><th>FLP4</th></tr></thead><tbody></tbody></table></div>
+<details class="card workspace-details" id="deflectionPanel"><summary>Control-surface and flap deflections</summary><div class="table-scroll"><table id="deflectionTable"><thead><tr><th>Configuration</th><th>POLAR</th><th>RUD1</th><th>RUD2</th><th>RUD3</th><th>RUD4</th><th>ELV1</th><th>ELV2</th><th>ELV3</th><th>ELV4</th><th>AIL1</th><th>AIL2</th><th>AIL3</th><th>AIL4</th><th>FLP1</th><th>FLP2</th><th>FLP3</th><th>FLP4</th></tr></thead><tbody></tbody></table></div></details>
 
-<div class="card"><h2 id="aeroCoeffHeading">Aerodynamic coefficients vs ALPHA</h2>
+<div class="card coefficient-controls"><h2 id="aeroCoeffHeading">Aerodynamic coefficients vs ALPHA</h2>
   <div class="controls">
     <label>Axis system:</label>
     <select id="stabilityAxisSelect" onchange="drawAdfCoeffPlot()">
@@ -1707,18 +1740,20 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
   </div>
   <p class="small">Choose axes and ALPHA, BETA, CL or CY. Coefficients plotted against themselves are omitted. L/D uses CL/CD in the chosen axes. Moment plots use the selected reference point.</p>
 </div>
+<div class="workspace-context" id="coefficientConditions"></div>
+<div id="coefficientLegend" class="shared-legend" aria-label="Coefficient curve visibility"></div>
 <div id="coefficientPlots" class="analysis-plot-grid">
 <div class="coefficient-row">
 <div class="card" id="coefficientCLCard"><h2 id="coefficientCLHeading">CL</h2><div id="adfCoeffPlot" class="plot"></div></div>
 <div class="card"><h2 id="coefficientCDHeading">CD</h2><div id="coefficientCDPlot" class="plot"></div></div>
 <div class="card" id="coefficientCYCard"><h2 id="coefficientCYHeading">CY</h2><div id="coefficientCYPlot" class="plot"></div></div>
-</div><div class="coefficient-row">
+</div><div class="workspace-context" id="momentRowReference"></div><div class="coefficient-row">
 <div class="card"><h2 id="coefficientCMHeading">CM</h2><div id="coefficientCMPlot" class="plot"></div></div>
 <div class="card"><h2 id="coefficientCRHeading">CR</h2><div id="coefficientCRPlot" class="plot"></div></div>
 <div class="card"><h2 id="coefficientCNHeading">CN</h2><div id="coefficientCNPlot" class="plot"></div></div>
-</div><div class="coefficient-row">
+</div><details id="additionalCoefficientPlots" class="workspace-details"><summary>Additional plots · L/D</summary><div class="coefficient-row">
 <div class="card"><h2 id="ldHeading">L/D</h2><div id="ldPlot" class="plot"></div></div>
-</div>
+</div></details>
 </div>
 </section>
 
@@ -1726,7 +1761,7 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
 <div class="card">
   <h2>Static margin analysis</h2>
   <p class="small">The active moment reference is controlled in the Coefficients tab. Static-margin plots update automatically when that reference changes.</p>
-  <button onclick="showSection('aero', document.querySelector('#dashboardNav button[data-section=&quot;aero&quot;]'))">Open moment-reference controls</button>
+  <button onclick="showSection('aero', document.querySelector('#dashboardNav button[data-section=&quot;aero&quot;]'));document.getElementById('referencePanel').open=true;document.getElementById('referencePanel').scrollIntoView({{block:'center'}})">Open moment-reference controls</button>
 </div>
 <div class="analysis-plot-grid">
 <div class="card"><h2 id="smClHeading">Static margin vs CLS</h2><div id="smClPlot" class="plot"></div></div>
@@ -1888,6 +1923,43 @@ const JAMAL_DEFAULTS = {{
 // Mixed typography: Claude-inspired serif for words, original sans-serif for numbers.
 const WORD_FONT = 'ui-serif, Georgia, Cambria, "Times New Roman", serif';
 const NUMBER_FONT = 'Arial, Helvetica, sans-serif';
+const hiddenCoefficientCurves = new Set();
+
+function installPlotActions(element) {{
+  if(!element?.matches('.dashboard-section .plot')||element.closest('#section-distributions')||element.dataset.actionsReady) return;
+  element.dataset.actionsReady='true';
+  const actions=document.createElement('div');actions.className='plot-actions';
+  ['Expand','PNG','SVG'].forEach(label=>{{
+    const button=document.createElement('button');button.textContent=label;
+    button.setAttribute('aria-label',`${{label}} ${{element.id}}`);
+    button.onclick=()=>{{
+      if(!element.data?.length) return;
+      const layout=JSON.parse(JSON.stringify(element.layout));layout.showlegend=true;
+      if(label!=='Expand') {{
+        const previous=element.layout.showlegend;
+        Plotly.relayout(element,{{showlegend:true}}).then(()=>Plotly.downloadImage(element,{{format:label.toLowerCase(),filename:`JAMAL_${{element.id}}`,width:1400,height:900}})).finally(()=>Plotly.relayout(element,{{showlegend:previous}}));return;
+      }}
+      const dialog=document.getElementById('plotDialog');
+      document.getElementById('expandedPlotTitle').textContent=element.layout.yaxis?.title?.text||element.id;
+      dialog.showModal();delete layout.width;delete layout.height;layout.autosize=true;
+      Plotly.newPlot('expandedPlot',JSON.parse(JSON.stringify(element.data)),layout,{{responsive:true}});
+    }};
+    actions.appendChild(button);
+  }});
+  element.before(actions);
+}}
+
+function setupPlotFirstWorkspace() {{
+  const section=document.getElementById('section-aero'), controls=section.querySelector('.coefficient-controls');
+  section.prepend(controls);
+  section.appendChild(document.getElementById('deflectionPanel'));
+  const dialog=document.createElement('dialog');dialog.id='plotDialog';
+  dialog.innerHTML='<header><h2 id="expandedPlotTitle">Expanded plot</h2><button type="button">Close</button></header><div id="expandedPlot" class="plot"></div>';
+  document.body.appendChild(dialog);
+  dialog.querySelector('button').onclick=()=>dialog.close();
+  dialog.addEventListener('close',()=>Plotly.purge('expandedPlot'));
+  document.getElementById('additionalCoefficientPlots').addEventListener('toggle',()=>{{if(document.getElementById('additionalCoefficientPlots').open) Plotly.Plots.resize('ldPlot');}});
+}}
 
 function mixedTypographyLayout(layout) {{
   const out = Object.assign({{}}, layout || {{}});
@@ -1922,6 +1994,7 @@ const originalPlotlyReact = Plotly.react.bind(Plotly);
 Plotly.newPlot = function(gd, data, layout, config) {{
   const element = typeof gd === "string" ? document.getElementById(gd) : gd;
   const styled = mixedTypographyLayout(layout);
+  installPlotActions(element);
   styled.uirevision = JSON.stringify([styled.xaxis?.title, styled.yaxis?.title]);
   return element?._fullLayout
     ? originalPlotlyReact(gd, data, styled, config)
@@ -2307,6 +2380,7 @@ function drawKpis(data) {{
   const susp = data.filter(r => r.status === "SUSPICIOUS").length;
   const divg = data.filter(r => r.status === "DIVERGED").length;
   const meshWarn = filteredSummaries().filter(s => ["WARNING", "CRITICAL"].includes((s.mesh || {{}}).status)).length;
+  document.getElementById('compactStatus').textContent=`${{total}} cases · ${{conv}} converged · ${{acc}} acceptable · ${{susp}} suspicious · ${{divg}} diverged`;
   document.getElementById("kpis").innerHTML = `
     <div class="kpi"><div>Total cases</div><strong>${{total}}</strong></div>
     <div class="kpi"><div>Converged</div><strong>${{conv}}</strong></div>
@@ -3017,6 +3091,20 @@ function drawStandardAeroPlots() {{
   const axis=document.getElementById("stabilityAxisSelect").value||"S";
   const abscissa=document.getElementById("coefficientAbscissa").value;
   const specs=coefficientPlotSpecs(axis,abscissa);
+  document.getElementById('coefficientConditions').textContent=conditionText(curves).split(' · ').reverse().join(' · ');
+  const reference=currentMomentReferenceMode()==='original'?'Original ADF reference':referenceTitle();
+  document.getElementById('referenceSummary').textContent=reference;
+  document.getElementById('momentRowReference').textContent=`Moment coefficients · ${{reference}}`;
+  const legend=document.getElementById('coefficientLegend');legend.replaceChildren();
+  curves.forEach(c=>{{
+    const key=JSON.stringify([c.case_label,c.polar]),style=traceStyle(c.case_label,c.polar);
+    const button=document.createElement('button');button.setAttribute('aria-pressed',String(!hiddenCoefficientCurves.has(key)));
+    const swatch=document.createElement('span');swatch.className='legend-swatch';swatch.style.borderColor=style.color;
+    if(style.dash!=='solid') swatch.style.borderTopStyle='dashed';
+    button.append(swatch,document.createTextNode(`${{c.case_label}} ${{c.polar.replace('POLAR-','P')}}`));
+    button.onclick=()=>{{hiddenCoefficientCurves.has(key)?hiddenCoefficientCurves.delete(key):hiddenCoefficientCurves.add(key);drawAdfCoeffPlot();}};
+    legend.appendChild(button);
+  }});
   document.getElementById("coefficientCLCard").hidden=abscissa==="CL";
   document.getElementById("coefficientCYCard").hidden=abscissa==="CY";
   if(abscissa==="CL") Plotly.purge("adfCoeffPlot");
@@ -3035,13 +3123,13 @@ function drawStandardAeroPlots() {{
       const points=coefficientPlotPoints(c.rows,spec);
       if (!points.some(p=>p.y!==null)) return;
       const st = traceStyle(c.case_label,c.polar);
-      traces.push({{x:points.map(p=>p.x),y:points.map(p=>p.y),connectgaps:false,mode:st.mode,
+      traces.push({{x:points.map(p=>p.x),y:points.map(p=>p.y),connectgaps:false,mode:st.mode,visible:hiddenCoefficientCurves.has(JSON.stringify([c.case_label,c.polar]))?'legendonly':true,
         name:`${{c.case_label}} ${{c.polar.replace("POLAR-","P")}}`,line:{{color:st.color,dash:st.dash}},
         marker:{{color:st.color,symbol:st.symbol,size:st.markerSize}},customdata:points.map(p=>customDataForCurve(c,p.row)),
         hovertemplate:`${{spec.xKey}}: %{{x:.5f}}<br>${{spec.label}}: %{{y:.6f}}<extra>%{{fullData.name}}</extra>`}});
     }});
     Plotly.newPlot(spec.id,traces,{{xaxis:{{title:["ALPHA","BETA"].includes(spec.xKey)?`${{spec.xKey}} [deg]`:spec.xKey}},
-      yaxis:{{title:spec.label}},showlegend:true,legend:{{orientation:"h",y:-.22}},margin:{{l:65,r:20,t:15,b:95}}}},{{responsive:true}});
+      yaxis:{{title:spec.label}},showlegend:false,legend:{{orientation:"h",y:-.22}},margin:{{l:65,r:20,t:15,b:55}}}},{{responsive:true}});
   }});
   populateExportPlots();
 }}
@@ -3366,6 +3454,7 @@ applyState=function(s){{if(s){{
   ["deltaAxis","dragRiseAxis"].forEach(id=>document.getElementById(id).value=["W","S","B"].includes(s[id])?s[id]:"S");
 }}return applyStateBeforeAbscissa(s);}};
 
+setupPlotFirstWorkspace();
 setupComparisonControls();populateExportPlots();refreshPresetSelect();drawIntegrity();drawProvenance();
 const lastState=storageGet("JAMAL_v24_last_state",null);
 if(lastState){{setTimeout(()=>applyState(lastState),10);}}else{{setDensity("comfortable");}}
