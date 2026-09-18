@@ -1,4 +1,11 @@
-# JAMAL Aerodynamic Results Dashboard v25.5
+# JAMAL Aerodynamic Results Dashboard v25.6
+
+ADF files are sufficient to load the dashboard. Run histories, load/Cp distributions
+and drag-rise inputs are optional. When FLUENT_LOG is absent, the newest `.trn`
+file by modification time is used. If no history is available, coefficients remain
+accessible and convergence is reported as unavailable. Reference shifts require
+infout geometry; without it, original ADF moments are displayed. Adding/removing
+logs or changing the selected transcript automatically invalidates the polar cache.
 
 Approved plot-first layout: summary and reference details are collapsible, coefficient
 conditions and curve visibility controls are shared, and L/D opens under Additional

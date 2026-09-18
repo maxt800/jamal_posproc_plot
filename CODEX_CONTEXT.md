@@ -1,4 +1,18 @@
-# Current update: v25.5 (2026-09-17)
+# Current update: v25.6 (2026-09-18)
+
+Optional-input resilience: ADF files alone can generate a dashboard (02-RUNS is
+no longer required). Named FLUENT_LOG variants retain priority; otherwise use
+the newest .trn by modification time, with filename as deterministic tie-break.
+Selected transcript path participates in provenance and cache fingerprints.
+Missing convergence inputs yield an unavailable warning and no invented convergence
+classification. Available infout metadata is retained independently. Missing input
+fingerprints invalidate correctly when files appear/disappear. ADF populates filters;
+ADF-only reports open Coefficients and use original moment references when infout
+geometry is unavailable. Missing distribution infout is isolated per polar.
+Removed Worst final residual vs alpha panel and its draw/export calls.
+32 tests pass, including transcript precedence, full ADF-only generation and cache
+recovery when logs return. Browser verified ADF-only coefficient rendering, no
+JavaScript errors, and empty-history messages. Protected numeric parsers unchanged.
 
 2026-09-18: User approved the plot-first layout as main. Selected residual,
 aerodynamic and cp-max/time-step histories now occupy three columns, each

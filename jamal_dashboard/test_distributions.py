@@ -4,6 +4,7 @@ import contextlib
 import io
 import json
 import math
+import os
 from pathlib import Path
 import shutil
 import tempfile
@@ -122,6 +123,61 @@ class DistributionTests(unittest.TestCase):
             path.write_text(text)
             with self.assertRaises(ValueError):
                 dist.parse_curve(path)
+
+    def test_latest_transcript_fallback_and_log_priority(self):
+        run = self.base / '02-RUNS/POLAR-001'
+        log = engine.find_fluent_log(run)
+        original = log.read_bytes()
+        log.unlink()
+        older = run / 'fluent-20260917-120000.trn'
+        newer = run / 'fluent-20260918-120000.trn'
+        older.write_bytes(b'old transcript')
+        newer.write_bytes(original)
+        os.utime(older, (100, 100))
+        os.utime(newer, (200, 200))
+        self.assertEqual(engine.find_fluent_log(run), newer)
+        with contextlib.redirect_stdout(io.StringIO()):
+            launcher._run_generation_job('trn-test', self.payload)
+        self.assertEqual(launcher.job_snapshot('trn-test')['status'], 'complete')
+        report = json.loads((self.base/'03-RESULTS/DASHBOARD/dashboard.json').read_text())
+        self.assertEqual(len(report['results']), 10)
+        self.assertTrue(report['summaries'][0]['files']['fluent_log'].endswith(newer.name))
+        log.write_bytes(original)
+        self.assertEqual(engine.find_fluent_log(run), log)
+
+    def test_coefficients_survive_missing_optional_inputs_and_cache_recovery(self):
+        logs = {}
+        for number in (1, 2):
+            run = self.base / f'02-RUNS/POLAR-{number:03d}'
+            path = engine.find_fluent_log(run)
+            logs[path] = path.read_bytes()
+            path.unlink()
+        with contextlib.redirect_stdout(io.StringIO()):
+            launcher._run_generation_job('no-logs', self.payload)
+        self.assertEqual(launcher.job_snapshot('no-logs')['status'], 'complete')
+        output = self.base/'03-RESULTS/DASHBOARD/dashboard.json'
+        report = json.loads(output.read_text())
+        self.assertEqual(len(report['adf']['curves']), 2)
+        self.assertEqual(report['results'], [])
+        self.assertTrue(report['summaries'][0]['meta'])
+        for path, content in logs.items():
+            path.write_bytes(content)
+        with contextlib.redirect_stdout(io.StringIO()):
+            launcher._run_generation_job('logs-return', self.payload)
+        self.assertEqual(launcher.job_snapshot('logs-return')['status'], 'complete')
+        self.assertEqual(len(json.loads(output.read_text())['results']), 10)
+        # Remove only temporary fixture copies: no optional run/results inputs remain.
+        shutil.rmtree(self.base/'02-RUNS')
+        shutil.rmtree(self.base/'03-RESULTS/DISTCLCP')
+        shutil.rmtree(self.base/'03-RESULTS/DRAG-RISE')
+        with contextlib.redirect_stdout(io.StringIO()):
+            launcher._run_generation_job('adf-only', self.payload)
+        self.assertEqual(launcher.job_snapshot('adf-only')['status'], 'complete')
+        report = json.loads(output.read_text())
+        self.assertEqual(len(report['adf']['curves']), 2)
+        self.assertEqual(report['results'], [])
+        self.assertEqual(report['distributions']['series'], [])
+        self.assertEqual(report['drag_rise']['curves'], [])
 
     def test_full_generation_reuse_and_writer_failure_preserve_report(self):
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):

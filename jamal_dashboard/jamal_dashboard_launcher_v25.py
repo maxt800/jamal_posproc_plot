@@ -50,7 +50,7 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 
-APP_VERSION = "v25.5"
+APP_VERSION = "v25.6"
 ENGINE_FILENAME = "jamal_polar_convergence_dashboard_v25.py"
 MAX_CONFIGURATIONS = 5
 DEFAULT_OUTPUT_NAME = "dashboard"
@@ -140,13 +140,12 @@ def resolve_base_directory(raw_path: str) -> Path:
 
         runs_dir = candidate / "02-RUNS"
         results_dir = candidate / "03-RESULTS"
-        if candidate.exists() and candidate.is_dir() and runs_dir.is_dir() and results_dir.is_dir():
+        if candidate.is_dir() and (results_dir / 'ADF').is_dir():
             return candidate.resolve()
 
     raise FileNotFoundError(
-        "Could not locate a JAMAL base folder containing both 02-RUNS and "
-        "03-RESULTS. Select the folder where 00-SUPPORT, 01-GRIDS, 02-RUNS, "
-        "and 03-RESULTS are located."
+        "Could not locate a JAMAL base folder containing 03-RESULTS/ADF. "
+        "Select the base folder or its ADF directory."
     )
 
 
@@ -285,6 +284,8 @@ def _job_log(job_id: str, message: str) -> None:
 
 
 def _file_fingerprint(path: Path) -> Dict[str, Any]:
+    if not path.is_file():
+        return {"path": str(path.resolve()), "missing": True}
     stat = path.stat()
     try:
         resolved = str(path.resolve())
@@ -357,7 +358,7 @@ def _polar_source_info(cfg: Dict[str, Any], polar_number: int) -> Dict[str, Any]
     run_dir = Path(cfg["runs_directory"]) / polar_name
     infout_path = run_dir / "infout"
     log_path = ENGINE.find_fluent_log(run_dir)
-    missing = [str(path) for path in (adf_path, infout_path, log_path) if not path.exists()]
+    missing = [str(path) for path in (adf_path,) if not path.is_file()]
     if missing:
         raise FileNotFoundError(f"{cfg['label']} | {polar_name}: missing source files: {missing}")
     return {
@@ -484,7 +485,7 @@ def _run_generation_job(job_id: str, payload: Dict[str, Any]) -> None:
                 with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(buffer):
                     df = ENGINE.read_polar_file(source["adf_path"])
                     sweep_var = ENGINE.detect_sweep_variable(df)
-                    summary, rows, polar_history = ENGINE.process_polar_convergence(cfg["label"], source["polar_name"], source["run_dir"])
+                    summary, rows, polar_history = ENGINE.process_optional_convergence(cfg["label"], source["polar_name"], source["run_dir"])
                 text = buffer.getvalue().strip()
                 if text:
                     _job_log(job_id, text)

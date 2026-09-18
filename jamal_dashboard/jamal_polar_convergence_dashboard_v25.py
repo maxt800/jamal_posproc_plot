@@ -121,7 +121,7 @@ FLUENT_LOG_NAMES = [
 ]
 
 # Module versions shown in the dashboard and JSON output.
-SCRIPT_VERSION = "v25.5"
+SCRIPT_VERSION = "v25.6"
 MODULE_VERSIONS = {
     "infout parser": "1.3",
     "Distributions": jamal_distributions.VERSION,
@@ -294,9 +294,12 @@ def get_paths_from_adf_dir(adf_dir):
 def find_fluent_log(polar_path):
     for name in FLUENT_LOG_NAMES:
         candidate = polar_path / name
-        if candidate.exists():
+        if candidate.is_file():
             return candidate
-    matches = list(polar_path.glob("*LOG*")) + list(polar_path.glob("*log*"))
+    transcripts = [p for p in polar_path.glob('*') if p.is_file() and p.suffix.lower() == '.trn']
+    if transcripts:
+        return max(transcripts, key=lambda p: (p.stat().st_mtime_ns, p.name.lower()))
+    matches = [p for p in list(polar_path.glob("*LOG*")) + list(polar_path.glob("*log*")) if p.is_file()]
     if matches:
         return matches[0]
     return polar_path / "FLUENT_LOG"
@@ -1252,6 +1255,31 @@ def process_polar_convergence(case_label, polar_name, polar_path):
     return summary, rows, history
 
 
+def process_optional_convergence(case_label, polar_name, polar_path):
+    """Keep valid ADF data usable when optional run diagnostics are unavailable."""
+    try:
+        return process_polar_convergence(case_label, polar_name, polar_path)
+    except (OSError, ValueError, KeyError, IndexError) as error:
+        message = f"Convergence unavailable: {error}"
+        print(f"  WARNING: {message}")
+        info = {"meta": {}, "cases": [], "deflections": {}}
+        infout_path = polar_path / 'infout'
+        try:
+            info = parse_infout(infout_path)
+        except (OSError, ValueError, KeyError, IndexError):
+            pass
+        log_path = find_fluent_log(polar_path)
+        summary = {
+            "case_label": case_label, "polar": polar_name, "polar_path": str(polar_path),
+            "meta": info['meta'], "deflections": info.get('deflections', {}),
+            "mesh": {"status": "NOT_AVAILABLE", "warnings": []}, "diagnostics": {},
+            "n_cases_infout": len(info['cases']), "n_history_blocks": 0,
+            "convergence_unavailable": message,
+            "files": {"infout": str(infout_path), "fluent_log": str(log_path)},
+        }
+        return summary, [], {}
+
+
 def build_provenance(case_configs, summaries, adf_data, drag_rise_data):
     return {
         "generated_utc": datetime.now(timezone.utc).isoformat(),
@@ -1334,6 +1362,10 @@ def build_integrity_checks(case_configs, summaries, conv_rows, adf_data, drag_ri
             checks.append({"severity": "WARNING", "configuration": label, "polar": polar, "check": "Case count mismatch", "details": f"infout has {summary.get('n_cases_infout')} cases while ADF has {len(rows)} rows."})
 
     for summary in summaries:
+        if summary.get('convergence_unavailable'):
+            checks.append({"severity": "WARNING", "configuration": summary['case_label'],
+                           "polar": summary['polar'], "check": "Convergence unavailable",
+                           "details": summary['convergence_unavailable']})
         d = summary.get("diagnostics", {})
         if d.get("history_rows_found", 0) < d.get("total_expected_iters", 0):
             checks.append({"severity": "ERROR", "configuration": summary.get("case_label"), "polar": summary.get("polar"), "check": "Incomplete Fluent history", "details": f"Found {d.get('history_rows_found', 0)} monitor rows; expected {d.get('total_expected_iters', 0)}."})
@@ -1809,7 +1841,6 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
 
 <section id="section-convergence" class="dashboard-section">
 <div class="analysis-plot-grid">
-<div class="card"><h2>Worst final residual vs alpha</h2><div id="residualSummaryPlot" class="plot"></div></div>
 <div class="card"><h2>All final residual equations vs alpha</h2>
   <div class="controls">
     <label>Residual equation:</label>
@@ -2305,8 +2336,8 @@ function updateMomentRefInfo() {{
 }}
 
 function setupFilters() {{
-  const labels = ["ALL"].concat(unique(convRows.map(r => r.case_label)));
-  const polars = ["ALL"].concat(unique(convRows.map(r => r.polar)));
+  const labels = ["ALL"].concat(unique([...convRows,...adfData.curves].map(r => r.case_label)));
+  const polars = ["ALL"].concat(unique([...convRows,...adfData.curves].map(r => r.polar)));
   document.getElementById("labelFilter").innerHTML = labels.map(v => `<option value="${{v}}">${{v}}</option>`).join("");
   document.getElementById("polarFilter").innerHTML = polars.map(v => `<option value="${{v}}">${{v}}</option>`).join("");
   setupCaseHistoryFilter();
@@ -2377,7 +2408,7 @@ function drawKpis(data) {{
   const susp = data.filter(r => r.status === "SUSPICIOUS").length;
   const divg = data.filter(r => r.status === "DIVERGED").length;
   const meshWarn = filteredSummaries().filter(s => ["WARNING", "CRITICAL"].includes((s.mesh || {{}}).status)).length;
-  document.getElementById('compactStatus').textContent=`${{total}} cases · ${{conv}} converged · ${{acc}} acceptable · ${{susp}} suspicious · ${{divg}} diverged`;
+  document.getElementById('compactStatus').textContent=convRows.length?`${{total}} cases · ${{conv}} converged · ${{acc}} acceptable · ${{susp}} suspicious · ${{divg}} diverged`:`${{filteredAdfCurves().length}} ADF polars · Convergence history unavailable`;
   document.getElementById("kpis").innerHTML = `
     <div class="kpi"><div>Total cases</div><strong>${{total}}</strong></div>
     <div class="kpi"><div>Converged</div><strong>${{conv}}</strong></div>
@@ -2762,7 +2793,7 @@ function refreshAll() {{
   updateMomentRefInfo();
   drawKpis(data); drawAssessmentKpis(data); drawStatusMap(data);
   drawAdfCoeffPlot(); drawAdfXY("dragPolarPlot", "CLS", "CDS", "CDS vs CLS"); drawAdfXY("cmClPlot", "CLS", "CMS25", "CMS25 vs CLS"); drawAdfXY("ldPlot", "CLS", "CDS", "L/D vs CLS", r => r.CLS / r.CDS, "L/D"); drawSmPlots(); drawDragRisePlots();
-  drawResidualSummaryPlot(data); drawResidualEquationsPlot(data); drawCpmaxPlot(data);
+   drawResidualEquationsPlot(data); drawCpmaxPlot(data);
   drawClassificationTable(data); drawOutlierDiagnostics(data); drawMeshQuality(); drawDeflections(); drawDiagnostics(); drawTable(data);
 }}
 
@@ -3097,13 +3128,17 @@ function coefficientPlotPoints(rows, spec) {{
 }}
 
 function drawStandardAeroPlots() {{
+  const missingReference=filteredAdfCurves().some(c=>{{const meta=summaryFor(c.case_label,c.polar)?.meta;return !meta||!Number.isFinite(meta.cref)||!Number.isFinite(meta.bref);}});
+  const referenceSelect=document.getElementById('momentReferenceSelect');
+  referenceSelect.querySelector('option[value="user"]').disabled=missingReference;
+  if(missingReference) referenceSelect.value='original';
   const curves = currentAdfCurves();
   const axis=document.getElementById("stabilityAxisSelect").value||"S";
   const abscissa=document.getElementById("coefficientAbscissa").value;
   const specs=coefficientPlotSpecs(axis,abscissa);
   document.getElementById('coefficientConditions').textContent=[conditionText(curves).split(' · ').reverse().join(' · '),fixedAngleText(curves)].filter(Boolean).join(' · ');
   const reference=currentMomentReferenceMode()==='original'?'Original ADF reference':referenceTitle();
-  document.getElementById('referenceSummary').textContent=reference;
+  document.getElementById('referenceSummary').textContent=reference+(missingReference?' · infout reference unavailable':'');
   document.getElementById('momentRowReference').textContent=`Moment coefficients · ${{reference}}`;
   const legend=document.getElementById('coefficientLegend');legend.replaceChildren();
   curves.forEach(c=>{{
@@ -3388,7 +3423,7 @@ function setDensity(value) {{
 }}
 
 function populateExportPlots() {{
-  const ids=[...(document.getElementById("coefficientAbscissa").value==="CL"?[]:["adfCoeffPlot"]),"coefficientCDPlot",...(document.getElementById("coefficientAbscissa").value==="CY"?[]:["coefficientCYPlot"]),"coefficientCMPlot","coefficientCRPlot","coefficientCNPlot","ldPlot","smClPlot","smSweepPlot","comparisonPlot","residualSummaryPlot","residualEquationsPlot","cpmaxPlot","selectedResidualHistory","selectedAeroHistory","selectedCpHistory","outlierScorePlot"];
+  const ids=[...(document.getElementById("coefficientAbscissa").value==="CL"?[]:["adfCoeffPlot"]),"coefficientCDPlot",...(document.getElementById("coefficientAbscissa").value==="CY"?[]:["coefficientCYPlot"]),"coefficientCMPlot","coefficientCRPlot","coefficientCNPlot","ldPlot","smClPlot","smSweepPlot","comparisonPlot","residualEquationsPlot","cpmaxPlot","selectedResidualHistory","selectedAeroHistory","selectedCpHistory","outlierScorePlot"];
   const previous=document.getElementById("exportPlotSelect").value;
   document.getElementById("exportPlotSelect").innerHTML=ids.map(id=>`<option value="${{id}}">${{id}}</option>`).join("");
   if(ids.includes(previous)) document.getElementById("exportPlotSelect").value=previous;
@@ -3449,7 +3484,7 @@ const baseRefreshAllV19=refreshAll;
 refreshAll=function(){{
   const data=getFilteredRows();updateMomentRefInfo();updateCaseHistoryOptions();drawKpis(data);drawAssessmentKpis(data);drawStatusMap(data);
   drawAdfCoeffPlot();drawSmPlots();drawComparisonPlot();drawDragRisePlots();
-  drawResidualSummaryPlot(data);drawResidualEquationsPlot(data);drawCpmaxPlot(data);drawClassificationTable(data);drawOutlierDiagnostics(data);drawMeshQuality();drawDeflections();drawDiagnostics();drawTable(data);drawSelectedCaseSummary();drawIntegrity();drawProvenance();const fm={{all:"All curves",baseline:"Baseline only",selected:"Selected curve only",selected_baseline:"Selected + baseline",none:"All curves hidden"}};document.getElementById("focusModeLabel").textContent=fm[focusMode]||focusMode;saveLastState();
+  drawResidualEquationsPlot(data);drawCpmaxPlot(data);drawClassificationTable(data);drawOutlierDiagnostics(data);drawMeshQuality();drawDeflections();drawDiagnostics();drawTable(data);drawSelectedCaseSummary();drawIntegrity();drawProvenance();const fm={{all:"All curves",baseline:"Baseline only",selected:"Selected curve only",selected_baseline:"Selected + baseline",none:"All curves hidden"}};document.getElementById("focusModeLabel").textContent=fm[focusMode]||focusMode;saveLastState();
 }};
 
 function updateCaseHistoryOptions(){{const select=document.getElementById("caseHistoryFilter"),old=select.value;const rows=evaluatedRows().slice().sort((a,b)=>(a.case_label+a.polar+a.case).localeCompare(b.case_label+b.polar+b.case));select.innerHTML=rows.map(r=>`<option value="${{r.case_key}}">${{r.case_label}} | ${{r.polar}} | CASE ${{r.case}} | α=${{r.alpha}} | ${{r.status}}</option>`).join("");if(rows.some(r=>r.case_key===old))select.value=old;}}
@@ -3466,7 +3501,7 @@ applyState=function(s){{if(s){{
 setupPlotFirstWorkspace();
 setupComparisonControls();populateExportPlots();refreshPresetSelect();drawIntegrity();drawProvenance();
 const lastState=storageGet("JAMAL_v24_last_state",null);
-if(lastState){{setTimeout(()=>applyState(lastState),10);}}else{{setDensity("comfortable");}}
+if(lastState){{setTimeout(()=>applyState(convRows.length?lastState:{{...lastState,section:'aero'}}),10);}}else{{setDensity("comfortable");if(!convRows.length)showSection('aero',null);}}
 
 initializeMomentReferenceInputs(); setupFilters(); drawDeflections(); drawDiagnostics(); drawMeshQuality(); drawModuleVersions(); refreshAll(); drawSelectedHistory();
 </script>
@@ -3516,7 +3551,7 @@ def main():
             print(f"\nProcessing {case_cfg.label} | {polar_name}")
             print(f"  Run directory: {polar_path}")
             try:
-                summary, rows, history = process_polar_convergence(case_cfg.label, polar_name, polar_path)
+                summary, rows, history = process_optional_convergence(case_cfg.label, polar_name, polar_path)
             except Exception as err:
                 print(f"  ERROR: {err}")
                 continue

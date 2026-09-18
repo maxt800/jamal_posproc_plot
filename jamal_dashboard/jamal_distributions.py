@@ -115,7 +115,11 @@ def read_distributions(configurations, summaries, parse_infout, cache_dir, force
             root = Path(cfg['base_directory']) / '03-RESULTS' / 'DISTCLCP' / polar
             if not root.is_dir():
                 continue  # Optional module; no DISTCLCP is not an error.
-            info = parse_infout(Path(cfg['runs_directory']) / polar / 'infout')
+            try:
+                info = parse_infout(Path(cfg['runs_directory']) / polar / 'infout')
+            except (OSError, ValueError, KeyError, IndexError) as error:
+                issue(cfg, polar, 'All components', 'all', f'infout unavailable: {error}')
+                continue
             meta, cases = info['meta'], info['cases']
             components = sorted((p for p in root.iterdir() if p.is_dir() and not p.is_symlink()), key=lambda p: p.name)
             for component in components:
