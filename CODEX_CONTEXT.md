@@ -1,5 +1,16 @@
 # Current update: v25.5 (2026-09-17)
 
+2026-09-18: User approved the plot-first layout as main. Selected residual,
+aerodynamic and cp-max/time-step histories now occupy three columns, each
+wrapped with its own actions; narrow screens stack them. Removed redundant
+CLZB/CDXB/CMYB versus alpha convergence panels, draw calls and export entries.
+Coefficient conditions include fixed BETA for ALPHA sweeps and fixed ALPHA for
+BETA sweeps using each polar's sweep metadata. Different conditions are labeled
+per configuration/polar; missing or varying angles are explicitly identified.
+All 30 tests pass. Browser verified three aligned history panels, absent redundant
+plots and the fixed-angle condition. This approved version supersedes the local
+trial notes below and is being promoted to GitHub main.
+
 2026-09-18: Plot-first layout trial on codex/plot-first-layout. Previous validated
 version 696c0fd was pushed to GitHub main before edits. Summary now collapses
 to a status strip, secondary view controls open from the toolbar, and moment

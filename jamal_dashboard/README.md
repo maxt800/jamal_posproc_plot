@@ -1,10 +1,13 @@
 # JAMAL Aerodynamic Results Dashboard v25.5
 
-Plot-first layout trial: summary and reference details are collapsible, coefficient
+Approved plot-first layout: summary and reference details are collapsible, coefficient
 conditions and curve visibility controls are shared, and L/D opens under Additional
 plots. Expand, PNG and SVG actions are available beside analysis plots. The existing
-Cp and spanwise distribution interface is preserved. The pre-layout version is
-saved on GitHub main at 696c0fd; this trial uses codex/plot-first-layout.
+Cp and spanwise distribution interface is preserved. The pre-layout checkpoint
+is commit 696c0fd. Selected residual, aero and cp-max/time-step histories share
+one row. Redundant convergence coefficient-versus-alpha panels are removed.
+Coefficient conditions show fixed BETA for ALPHA sweeps, or fixed ALPHA for
+BETA sweeps; differing conditions are identified by configuration and polar.
 
 Coefficients shows three force plots in a row, then three moment plots below,
 followed by L/D. Choose Body, Stability or Wind axes, then ALPHA, BETA,

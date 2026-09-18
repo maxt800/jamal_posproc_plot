@@ -1809,9 +1809,6 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
 
 <section id="section-convergence" class="dashboard-section">
 <div class="analysis-plot-grid">
-<div class="card"><h2>Convergence CLZB vs alpha</h2><div id="clPlot" class="plot"></div></div>
-<div class="card"><h2>Convergence CDXB vs alpha</h2><div id="cdPlot" class="plot"></div></div>
-<div class="card"><h2>Convergence CMYB vs alpha</h2><div id="cmPlot" class="plot"></div></div>
 <div class="card"><h2>Worst final residual vs alpha</h2><div id="residualSummaryPlot" class="plot"></div></div>
 <div class="card"><h2>All final residual equations vs alpha</h2>
   <div class="controls">
@@ -1844,10 +1841,10 @@ body.density-presentation th, body.density-presentation td {{ padding: 9px; font
   <div id="selectedCaseSummary" class="status-panel"></div>
   <h3>Final-window statistics</h3>
   <div class="table-scroll"><table id="finalWindowStatsTable"><thead><tr><th>Monitor</th><th>Mean</th><th>Minimum</th><th>Maximum</th><th>Standard deviation</th><th>Drift / 100 iters</th></tr></thead><tbody></tbody></table></div>
-  <div class="analysis-plot-grid">
-  <div id="selectedResidualHistory" class="plot"></div>
-  <div id="selectedAeroHistory" class="plot"></div>
-  <div id="selectedCpHistory" class="plot"></div>
+  <div class="coefficient-row" id="selectedHistoryPlots">
+  <div><div id="selectedResidualHistory" class="plot"></div></div>
+  <div><div id="selectedAeroHistory" class="plot"></div></div>
+  <div><div id="selectedCpHistory" class="plot"></div></div>
   </div>
 </div>
 </section>
@@ -2765,7 +2762,6 @@ function refreshAll() {{
   updateMomentRefInfo();
   drawKpis(data); drawAssessmentKpis(data); drawStatusMap(data);
   drawAdfCoeffPlot(); drawAdfXY("dragPolarPlot", "CLS", "CDS", "CDS vs CLS"); drawAdfXY("cmClPlot", "CLS", "CMS25", "CMS25 vs CLS"); drawAdfXY("ldPlot", "CLS", "CDS", "L/D vs CLS", r => r.CLS / r.CDS, "L/D"); drawSmPlots(); drawDragRisePlots();
-  drawCoeffPlot(data, "clPlot", "clzb_final", "CLZB vs alpha", "CLZB"); drawCoeffPlot(data, "cdPlot", "cdxb_final", "CDXB vs alpha", "CDXB"); drawCoeffPlot(data, "cmPlot", "cmyb_final", "CMYB vs alpha", "CMYB");
   drawResidualSummaryPlot(data); drawResidualEquationsPlot(data); drawCpmaxPlot(data);
   drawClassificationTable(data); drawOutlierDiagnostics(data); drawMeshQuality(); drawDeflections(); drawDiagnostics(); drawTable(data);
 }}
@@ -3016,6 +3012,20 @@ function conditionText(curves) {{
   return `${{machText(mach)}} · ${{reynoldsText(re)}}`;
 }}
 
+function fixedAngleText(curves) {{
+  const labels=(curves||[]).map(c=>{{
+    const fixed=c.sweep_var==='BETA'?'ALPHA':'BETA';
+    const values=(c.rows||[]).map(r=>r[fixed]).filter(Number.isFinite);
+    if(!values.length) return `${{fixed}}=n/a`;
+    const low=Math.min(...values),high=Math.max(...values);
+    const value=Math.abs(high-low)<1e-8?low.toFixed(2):`${{low.toFixed(2)}}–${{high.toFixed(2)}} (varies)`;
+    return `${{fixed}}=${{value}}°`;
+  }});
+  const unique=[...new Set(labels)];
+  if(unique.length<=1) return unique[0]||'';
+  return labels.map((label,i)=>`${{curves[i].case_label}} ${{curves[i].polar}}: ${{label}}`).join(' · ');
+}}
+
 function referenceTitle() {{
   if (currentMomentReferenceMode() === "original") return "Xref = 25% MAC";
   const inp = currentMomentInputs();
@@ -3091,7 +3101,7 @@ function drawStandardAeroPlots() {{
   const axis=document.getElementById("stabilityAxisSelect").value||"S";
   const abscissa=document.getElementById("coefficientAbscissa").value;
   const specs=coefficientPlotSpecs(axis,abscissa);
-  document.getElementById('coefficientConditions').textContent=conditionText(curves).split(' · ').reverse().join(' · ');
+  document.getElementById('coefficientConditions').textContent=[conditionText(curves).split(' · ').reverse().join(' · '),fixedAngleText(curves)].filter(Boolean).join(' · ');
   const reference=currentMomentReferenceMode()==='original'?'Original ADF reference':referenceTitle();
   document.getElementById('referenceSummary').textContent=reference;
   document.getElementById('momentRowReference').textContent=`Moment coefficients · ${{reference}}`;
@@ -3378,7 +3388,7 @@ function setDensity(value) {{
 }}
 
 function populateExportPlots() {{
-  const ids=[...(document.getElementById("coefficientAbscissa").value==="CL"?[]:["adfCoeffPlot"]),"coefficientCDPlot",...(document.getElementById("coefficientAbscissa").value==="CY"?[]:["coefficientCYPlot"]),"coefficientCMPlot","coefficientCRPlot","coefficientCNPlot","ldPlot","smClPlot","smSweepPlot","comparisonPlot","clPlot","cdPlot","cmPlot","residualSummaryPlot","residualEquationsPlot","cpmaxPlot","selectedResidualHistory","selectedAeroHistory","selectedCpHistory","outlierScorePlot"];
+  const ids=[...(document.getElementById("coefficientAbscissa").value==="CL"?[]:["adfCoeffPlot"]),"coefficientCDPlot",...(document.getElementById("coefficientAbscissa").value==="CY"?[]:["coefficientCYPlot"]),"coefficientCMPlot","coefficientCRPlot","coefficientCNPlot","ldPlot","smClPlot","smSweepPlot","comparisonPlot","residualSummaryPlot","residualEquationsPlot","cpmaxPlot","selectedResidualHistory","selectedAeroHistory","selectedCpHistory","outlierScorePlot"];
   const previous=document.getElementById("exportPlotSelect").value;
   document.getElementById("exportPlotSelect").innerHTML=ids.map(id=>`<option value="${{id}}">${{id}}</option>`).join("");
   if(ids.includes(previous)) document.getElementById("exportPlotSelect").value=previous;
@@ -3439,7 +3449,6 @@ const baseRefreshAllV19=refreshAll;
 refreshAll=function(){{
   const data=getFilteredRows();updateMomentRefInfo();updateCaseHistoryOptions();drawKpis(data);drawAssessmentKpis(data);drawStatusMap(data);
   drawAdfCoeffPlot();drawSmPlots();drawComparisonPlot();drawDragRisePlots();
-  drawCoeffPlot(data,"clPlot","clzb_final","CLZB vs alpha","CLZB");drawCoeffPlot(data,"cdPlot","cdxb_final","CDXB vs alpha","CDXB");drawCoeffPlot(data,"cmPlot","cmyb_final","CMYB vs alpha","CMYB");
   drawResidualSummaryPlot(data);drawResidualEquationsPlot(data);drawCpmaxPlot(data);drawClassificationTable(data);drawOutlierDiagnostics(data);drawMeshQuality();drawDeflections();drawDiagnostics();drawTable(data);drawSelectedCaseSummary();drawIntegrity();drawProvenance();const fm={{all:"All curves",baseline:"Baseline only",selected:"Selected curve only",selected_baseline:"Selected + baseline",none:"All curves hidden"}};document.getElementById("focusModeLabel").textContent=fm[focusMode]||focusMode;saveLastState();
 }};
 

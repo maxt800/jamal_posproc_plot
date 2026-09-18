@@ -211,6 +211,26 @@ for(const axis of ['B','S','W']) {
         result = subprocess.run([shutil.which('node'), str(path)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_fixed_angle_labels(self):
+        html = self.html()
+        js = "const assert=require('node:assert/strict');\n"
+        js += html[html.index('function fixedAngleText('):html.index('function referenceTitle(')]
+        js += r'''
+const alpha={case_label:'A',polar:'P001',sweep_var:'ALPHA',rows:[{ALPHA:0,BETA:2},{ALPHA:5,BETA:2}]};
+const beta={case_label:'B',polar:'P002',sweep_var:'BETA',rows:[{ALPHA:3,BETA:0},{ALPHA:3,BETA:4}]};
+assert.equal(fixedAngleText([alpha]),'BETA=2.00°');
+assert.equal(fixedAngleText([beta]),'ALPHA=3.00°');
+assert.equal(fixedAngleText([alpha,alpha]),'BETA=2.00°');
+assert.equal(fixedAngleText([alpha,beta]),'A P001: BETA=2.00° · B P002: ALPHA=3.00°');
+assert.equal(fixedAngleText([{sweep_var:'ALPHA',rows:[{BETA:null}]}]),'BETA=n/a');
+assert.equal(fixedAngleText([{sweep_var:'ALPHA',rows:[{BETA:0},{BETA:1}]}]),'BETA=0.00–1.00 (varies)°');
+assert.equal(fixedAngleText([]),'');
+'''
+        path = self.base / 'fixed_angle_checks.js'
+        path.write_text(js, encoding='utf-8')
+        result = subprocess.run([shutil.which('node'), str(path)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_selected_delta_and_drag_rise_axes(self):
         html = self.html()
         js = "const assert=require('node:assert/strict');\n"
